@@ -35,6 +35,9 @@
   .sub-btn { flex:none; min-width:0; padding:6px 14px; font-size:13px; border-width:1px; }
   .check-item { display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; font-size:13px; color:#475569; cursor:pointer; margin-right:8px; margin-top:8px; }
   .check-item input { accent-color:#0ea5e9; }
+  .q-group { margin-top:8px; }
+  .q-title { font-size:12px; color:#6b7280; margin-bottom:4px; }
+  .q-btn { flex:none; min-width:64px; padding:6px 12px; font-size:13px; border-width:1px; }
   #output { min-height:120px; white-space:pre-wrap; line-height:1.6; font-size:14px; }
   #output.empty { color:#9ca3af; }
   #status { font-size:12px; color:#0ea5e9; margin-top:8px; min-height:16px; }
@@ -136,8 +139,9 @@
 
   var scene = localStorage.getItem(SCENE_STORE) || "scam";
   var buttons = {};
-  var subButtons = {};
-  var currentSubId = null;
+  var questionButtons = {};
+  var currentAnswers = {};
+  var currentPromptId = "before";
   var subSwitch = $("subSwitch");
   var checkSwitch = $("checkSwitch");
   var checkedPrompts = [];
@@ -171,22 +175,35 @@
     var info = sceneName(s);
     sceneLabel.textContent = info.name;
     sceneTag.textContent = info.name;
-    // 子选项构建
-    currentSubId = null;
+    // 问答式子选项构建
+    currentPromptId = "before";
+    questionButtons = {};
+    currentAnswers = {};
     subSwitch.innerHTML = "";
-    subButtons = {};
-    var subs = info.subs || [];
-    if(subs.length){
-      subs.forEach(function(sub){
-        var b = document.createElement("button");
-        b.className = "scene-btn sub-btn";
-        b.textContent = (sub.emoji || "📌") + " " + sub.name;
-        b.onclick = function(){ setSub(sub); };
-        subSwitch.appendChild(b);
-        subButtons[sub.id] = b;
+    var qs = info.questions || [];
+    if(qs.length){
+      qs.forEach(function(q){
+        var wrap = document.createElement("div");
+        wrap.className = "q-group";
+        var t = document.createElement("div");
+        t.className = "q-title";
+        t.textContent = q.question;
+        wrap.appendChild(t);
+        var btnRow = document.createElement("div");
+        btnRow.className = "scene-switch";
+        questionButtons[q.id] = {};
+        q.options.forEach(function(o){
+          var b = document.createElement("button");
+          b.className = "scene-btn q-btn";
+          b.textContent = o.label;
+          b.onclick = function(){ setAnswer(q.id, o.id, q); };
+          btnRow.appendChild(b);
+          questionButtons[q.id][o.id] = b;
+        });
+        wrap.appendChild(btnRow);
+        subSwitch.appendChild(wrap);
       });
-      setSub(subs[0]);
-      subSwitch.style.display = "flex";
+      subSwitch.style.display = "block";
     } else {
       subSwitch.style.display = "none";
     }
@@ -218,29 +235,35 @@
     status("");
   }
 
-  function setSub(sub){
-    currentSubId = sub.id;
-    Object.keys(subButtons).forEach(function(id){
-      subButtons[id].classList.toggle("active", id === sub.id);
+  function setAnswer(qid, oid, q){
+    currentAnswers[qid] = oid;
+    Object.keys(questionButtons[qid] || {}).forEach(function(k){
+      questionButtons[qid][k].classList.toggle("active", k === oid);
     });
+    updatePromptLabel();
+  }
+
+  function updatePromptLabel(){
     var info = sceneName(scene);
-    var label = info.name;
-    if(currentSubId){
-      var subs = info.subs || [];
-      for(var i=0;i<subs.length;i++){ if(subs[i].id === currentSubId){ label += " · " + subs[i].name; break; } }
+    var reported = currentAnswers["reported"];
+    var result = currentAnswers["result"];
+    var id = "before";
+    if(reported === "yes"){
+      if(result === "no"){ id = "rejected"; }
+      else if(result === "yes"){ id = "refund_denied"; }
+      else { id = "after"; }
     }
-    sceneLabel.textContent = label;
-    sceneTag.textContent = label;
+    currentPromptId = id;
+    var labels = info.promptLabels || {};
+    var label = labels[id] || info.name;
+    sceneLabel.textContent = info.name + " · " + label;
+    sceneTag.textContent = info.name + " · " + label;
   }
 
   function currentPrompt(){
     var info = sceneName(scene);
-    var subs = info.subs || [];
-    var p = null;
-    if(currentSubId){
-      for(var i=0;i<subs.length;i++){ if(subs[i].id === currentSubId && subs[i].prompt){ p = subs[i].prompt; break; } }
-    }
-    if(!p){ p = PROMPTS[scene] || PROMPTS.scam; }
+    var prompts = info.prompts || {};
+    var p = prompts[currentPromptId] || PROMPTS[scene] || PROMPTS.scam;
     if(checkedPrompts.length){
       p = p + "\n【附加指令】" + checkedPrompts.join("\n");
     }
