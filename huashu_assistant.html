@@ -33,6 +33,8 @@
   .scene-btn:hover { border-color:#0ea5e9; }
   .scene-btn.active { border-color:#0ea5e9; background:#f0f9ff; color:#0369a1; }
   .sub-btn { flex:none; min-width:0; padding:6px 14px; font-size:13px; border-width:1px; }
+  .check-item { display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; font-size:13px; color:#475569; cursor:pointer; margin-right:8px; margin-top:8px; }
+  .check-item input { accent-color:#0ea5e9; }
   #output { min-height:120px; white-space:pre-wrap; line-height:1.6; font-size:14px; }
   #output.empty { color:#9ca3af; }
   #status { font-size:12px; color:#0ea5e9; margin-top:8px; min-height:16px; }
@@ -53,6 +55,7 @@
     <h2>🎯 场景切换</h2>
     <div class="scene-switch" id="sceneSwitch"></div>
     <div class="scene-switch" id="subSwitch" style="display:none;margin-top:8px;"></div>
+    <div id="checkSwitch" style="display:none;margin-top:4px;"></div>
     <div style="font-size:12px;color:#6b7280;margin-top:8px;">当前规则：<span id="ruleInfo">加载中…</span></div>
   </div>
 
@@ -136,6 +139,8 @@
   var subButtons = {};
   var currentSubId = null;
   var subSwitch = $("subSwitch");
+  var checkSwitch = $("checkSwitch");
+  var checkedPrompts = [];
 
   function sceneName(id){
     for(var i=0;i<SCENES.length;i++){ if(SCENES[i].id === id) return SCENES[i]; }
@@ -185,6 +190,31 @@
     } else {
       subSwitch.style.display = "none";
     }
+    // 勾选项渲染
+    checkSwitch.innerHTML = "";
+    checkedPrompts = [];
+    var checks = info.checkboxes || [];
+    if(checks.length){
+      checks.forEach(function(c){
+        var lbl = document.createElement("label");
+        lbl.className = "check-item";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.onchange = function(){
+          if(cb.checked){
+            if(checkedPrompts.indexOf(c.prompt) < 0){ checkedPrompts.push(c.prompt); }
+          } else {
+            checkedPrompts = checkedPrompts.filter(function(p){ return p !== c.prompt; });
+          }
+        };
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(" " + (c.emoji || "☑️") + " " + c.name));
+        checkSwitch.appendChild(lbl);
+      });
+      checkSwitch.style.display = "block";
+    } else {
+      checkSwitch.style.display = "none";
+    }
     status("");
   }
 
@@ -206,10 +236,15 @@
   function currentPrompt(){
     var info = sceneName(scene);
     var subs = info.subs || [];
+    var p = null;
     if(currentSubId){
-      for(var i=0;i<subs.length;i++){ if(subs[i].id === currentSubId && subs[i].prompt){ return subs[i].prompt; } }
+      for(var i=0;i<subs.length;i++){ if(subs[i].id === currentSubId && subs[i].prompt){ p = subs[i].prompt; break; } }
     }
-    return PROMPTS[scene] || PROMPTS.scam;
+    if(!p){ p = PROMPTS[scene] || PROMPTS.scam; }
+    if(checkedPrompts.length){
+      p = p + "\n【附加指令】" + checkedPrompts.join("\n");
+    }
+    return p;
   }
 
   async function loadCloudRules(){
