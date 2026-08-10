@@ -85,6 +85,7 @@
     <div class="actions">
       <button class="primary" id="send">生成话术</button>
       <button class="ghost" id="clear">清空</button>
+      <button class="ghost" id="care">💕人文关怀</button>
       <span class="tag" id="sceneTag">-</span>
     </div>
     <div id="status"></div>
@@ -428,6 +429,27 @@
       navigator.clipboard.writeText(t).then(function(){ status("✓ 已复制，去粘贴吧"); }, function(){ fallbackCopy(t); });
     } else { fallbackCopy(t); }
   }
+
+  var CARE_PHRASES = [
+    "亲亲，今天辛苦您啦，祝您生活愉快，有需要随时找小二哦～",
+    "亲亲，愿您每天顺顺利利的，烦心的事都走开，照顾好自己呀～",
+    "亲亲，谢谢您的理解，祝您一切安好，有需要随时来～",
+    "亲亲，早点休息哦，别太累了，祝您天天好心情～",
+    "亲亲，事情都会慢慢好起来的，您也要开开心心的呀，有需要随时找小二～",
+    "亲亲，您的问题小二都记着呢，祝您生活美满，万事顺意～",
+    "亲亲，今天也辛苦您了，心情放宽些，一切都会好起来的，祝您愉快～",
+    "亲亲，晚上早点休息，注意身体哦，祝您生活愉快，有需要随时来～"
+  ];
+  var careBtn = $("care");
+  careBtn.onclick = function(){
+    var t = CARE_PHRASES[Math.floor(Math.random() * CARE_PHRASES.length)];
+    outputEl.textContent = t;
+    outputEl.classList.remove("empty");
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ status("💕 已生成并复制，去发送吧"); }, function(){ fallbackCopy(t); });
+    } else { fallbackCopy(t); }
+  };
+
   function fallbackCopy(t){
     var ta = document.createElement("textarea");
     ta.value = t; document.body.appendChild(ta); ta.select();
