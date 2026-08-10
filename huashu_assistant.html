@@ -47,6 +47,15 @@
   .actions { display:flex; gap:8px; margin-top:10px; align-items:center; }
   .tag { display:inline-block; background:#ecfeff; color:#0e7490; font-size:11px; padding:2px 8px; border-radius:99px; margin-left:auto; }
   details summary { cursor:pointer; font-size:13px; color:#6b7280; }
+  .summary-btn { display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:12px 16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; font-weight:600; color:#334155; }
+  .summary-btn:hover { border-color:#0ea5e9; }
+  .summary-btn::after { content:"▾"; font-size:12px; color:#94a3b8; transition:transform .15s; }
+  details[open] .summary-btn::after { transform:rotate(180deg); }
+  details[open] .summary-btn { border-color:#0ea5e9; color:#0369a1; }
+  .opt-item { display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:6px 14px; font-size:13px; color:#475569; cursor:pointer; margin-right:8px; margin-top:8px; user-select:none; transition:all .15s; }
+  .opt-item:hover { border-color:#0ea5e9; }
+  .opt-item.active { background:#f0f9ff; border-color:#0ea5e9; color:#0369a1; }
+  .opt-item input { accent-color:#0ea5e9; }
   details { margin-top:10px; }
   details p, details li { font-size:12.5px; color:#6b7280; line-height:1.7; }
   details ol { padding-left:20px; }
@@ -99,9 +108,9 @@
       <li>话术规则每次打开自动从云端拉取最新版；连不上时用内置规则，不影响使用</li>
     </ol>
   </details>
-  <div class="card">
-    <h2>⚙️ 设置（首次使用填一次，之后自动记住）</h2>
-    <div class="row">
+  <details class="card">
+    <summary class="summary-btn">⚙️ 设置（API Key / 模型）</summary>
+    <div class="row" style="margin-top:10px;">
       <div class="grow">
         <label>DeepSeek API Key <a class="usage-link" href="https://platform.deepseek.com/usage" target="_blank" rel="noopener">查用量 ↗</a></label>
         <input type="password" id="apiKey" placeholder="sk-... 在 platform.deepseek.com 生成" autocomplete="off">
@@ -116,7 +125,7 @@
       <button class="ghost" id="saveKey">保存</button>
       <button class="danger" id="clearKey" title="清除已保存的Key">清除</button>
     </div>
-  </div>
+  </details>
 
 <script>
 (function(){
@@ -200,12 +209,17 @@
         btnRow.className = "scene-switch";
         questionButtons[q.id] = {};
         q.options.forEach(function(o){
-          var b = document.createElement("button");
-          b.className = "scene-btn q-btn";
-          b.textContent = o.label;
-          b.onclick = function(){ setAnswer(q.id, o.id, q); };
-          btnRow.appendChild(b);
-          questionButtons[q.id][o.id] = b;
+          var lbl = document.createElement("label");
+          lbl.className = "opt-item";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.onchange = function(){
+            if(cb.checked){ setAnswer(q.id, o.id, q); }
+          };
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(" " + o.label));
+          btnRow.appendChild(lbl);
+          questionButtons[q.id][o.id] = lbl;
         });
         wrap.appendChild(btnRow);
         subSwitch.appendChild(wrap);
@@ -245,7 +259,10 @@
   function setAnswer(qid, oid, q){
     currentAnswers[qid] = oid;
     Object.keys(questionButtons[qid] || {}).forEach(function(k){
-      questionButtons[qid][k].classList.toggle("active", k === oid);
+      var el = questionButtons[qid][k];
+      el.classList.toggle("active", k === oid);
+      var cb = el.querySelector("input");
+      if(cb){ cb.checked = (k === oid); }
     });
     updatePromptLabel();
   }
