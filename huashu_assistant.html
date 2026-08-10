@@ -95,7 +95,7 @@
 
   <div class="card">
     <h2>✍️ 顾客原话（当前场景：<span id="sceneLabel">-</span>）</h2>
-    <textarea id="input" placeholder="把顾客的原话整段粘进来，包括情绪化的骂人话也行，我来处理&#10;&#10;例：你们支付宝凭什么冻结我账户！我钱呢？我要报警！"></textarea>
+    <textarea id="input" placeholder="把整段对话粘进来（顾客说的 + 你回的都可以），标注&#34;顾客：/我：&#34;更清楚，AI 会看懂上下文生成你下一句该发的&#10;&#10;例：&#10;顾客：你们凭什么冻结我账户！钱呢？我要报警！&#10;我：您别急，小二帮您查一下&#10;顾客：查什么查，三天了，钱到底去哪了"></textarea>
     <div class="actions">
       <button class="primary" id="send">生成话术</button>
       <button class="ghost" id="clear">清空</button>
@@ -340,10 +340,14 @@
     outputEl.textContent = ""; outputEl.classList.remove("empty");
     status("生成中…（" + sceneName(scene).name + "场景）");
 
+    var sysContent = currentPrompt();
+    if(sysContent.indexOf("【对话上下文理解】") < 0){
+      sysContent += "\n\n【对话上下文理解】用户可能粘贴整段对话（含客服与顾客双方发言，可能带'顾客：/我：'前缀、时间戳或冒号分隔）。先理清：谁在说话、对话进行到哪一步、顾客当前的诉求、客服之前说过什么。生成的是客服【下一句】要发的消息：承接上文、不重复前面已说过的内容、不与之前客服的口径矛盾、不推翻之前客服说过的话。";
+    }
     var body = {
       model: modelSelect.value,
       messages: [
-        { role: "system", content: currentPrompt() },
+        { role: "system", content: sysContent },
         { role: "user", content: text }
       ],
       thinking: { type: "disabled" },
