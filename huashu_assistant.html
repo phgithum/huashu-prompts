@@ -419,6 +419,13 @@
       chatHistory.push({ role: "assistant", content: outputEl.textContent.trim() });
       lastSentText = inputEl.value;
       copyBtn.disabled = !outputEl.textContent.trim();
+      // 自动复制：生成完直接把话术复制到剪贴板
+      var _autoT = outputEl.textContent.trim();
+      if(_autoT){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(_autoT).then(function(){ status("✓ 已生成并自动复制，直接粘贴发送吧"); }, function(){ fallbackCopy(_autoT); });
+        } else { fallbackCopy(_autoT); }
+      }
     } catch(err){
       status("出错：" + err.message, true);
     } finally {
