@@ -54,16 +54,9 @@
   <h1>🦞 客服话术小助手</h1>
   <div class="sub">选场景 → 粘顾客原话 → 话术秒出。规则已内置：先安抚、像真人、不承诺、不说"冻结"。</div>
 
-  <div class="card">
-    <h2>⚡ 自动感应（复制即生成）</h2>
-    <div style="font-size:13px;color:#6b7280;line-height:1.7;">
-      开启后：在客服系统里 <b>Ctrl+C 复制顾客消息</b>，切回本页<b>自动生成</b>话术，你点"复制话术"发送。<br>
-      状态：<span id="autoStatus" style="color:#9ca3af;font-weight:600;">未开启</span>
-    </div>
-    <div class="actions">
-      <button class="primary" id="autoBtn">⚡ 开启自动感应</button>
-      <span style="font-size:12px;color:#9ca3af;">首次开启浏览器会问"允许查看剪贴板"，点允许</span>
-    </div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:#fff;border-radius:10px;padding:6px 12px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+    <button class="primary" id="autoBtn" style="padding:5px 12px;font-size:12px;">⚡ 自动感应</button>
+    <span id="autoStatus" style="font-size:12px;color:#9ca3af;">未开启（复制顾客消息后切回本页自动生成）</span>
   </div>
 
   <div class="card">
@@ -72,25 +65,6 @@
     <div class="scene-switch" id="subSwitch" style="display:none;margin-top:8px;"></div>
     <div id="checkSwitch" style="display:none;margin-top:4px;"></div>
     <div style="font-size:12px;color:#6b7280;margin-top:8px;">当前规则：<span id="ruleInfo">加载中…</span></div>
-  </div>
-
-  <div class="card">
-    <h2>⚙️ 设置（首次使用填一次，之后自动记住）</h2>
-    <div class="row">
-      <div class="grow">
-        <label>DeepSeek API Key</label>
-        <input type="password" id="apiKey" placeholder="sk-... 在 platform.deepseek.com 生成" autocomplete="off">
-      </div>
-      <div class="grow">
-        <label>模型</label>
-        <select id="model">
-          <option value="deepseek-v4-flash" selected>v4-flash（快、省，推荐）</option>
-          <option value="deepseek-v4-pro">v4-pro（更强，稍慢）</option>
-        </select>
-      </div>
-      <button class="ghost" id="saveKey">保存</button>
-      <button class="danger" id="clearKey" title="清除已保存的Key">清除</button>
-    </div>
   </div>
 
   <div class="card">
@@ -123,6 +97,24 @@
       <li>话术规则每次打开自动从云端拉取最新版；连不上时用内置规则，不影响使用</li>
     </ol>
   </details>
+  <div class="card">
+    <h2>⚙️ 设置（首次使用填一次，之后自动记住）</h2>
+    <div class="row">
+      <div class="grow">
+        <label>DeepSeek API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-... 在 platform.deepseek.com 生成" autocomplete="off">
+      </div>
+      <div class="grow">
+        <label>模型</label>
+        <select id="model">
+          <option value="deepseek-v4-flash" selected>v4-flash（快、省，推荐）</option>
+          <option value="deepseek-v4-pro">v4-pro（更强，稍慢）</option>
+        </select>
+      </div>
+      <button class="ghost" id="saveKey">保存</button>
+      <button class="danger" id="clearKey" title="清除已保存的Key">清除</button>
+    </div>
+  </div>
 
 <script>
 (function(){
