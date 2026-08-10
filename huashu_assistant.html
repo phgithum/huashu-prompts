@@ -198,37 +198,33 @@
     subSwitch.innerHTML = "";
     var qs = info.questions || [];
     if(qs.length){
-      qs.forEach(function(q){
-        var wrap = document.createElement("div");
-        wrap.className = "q-group";
-        var t = document.createElement("div");
-        t.className = "q-title";
-        t.textContent = q.question;
-        wrap.appendChild(t);
-        var btnRow = document.createElement("div");
-        btnRow.className = "scene-switch";
-        questionButtons[q.id] = {};
-        // 简化为两个勾选框：勾=是，不勾=否
-        var mk = function(labelText, key){
-          var lbl = document.createElement("label");
-          lbl.className = "opt-item";
-          var cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.onchange = function(){
-            currentAnswers[key] = cb.checked ? "yes" : "no";
-            lbl.classList.toggle("active", cb.checked);
-            updatePromptLabel();
-          };
-          lbl.appendChild(cb);
-          lbl.appendChild(document.createTextNode(" " + labelText));
-          btnRow.appendChild(lbl);
-          return cb;
+      var wrap = document.createElement("div");
+      wrap.className = "q-group";
+      var t = document.createElement("div");
+      t.className = "q-title";
+      t.textContent = "举报状态（勾选=是，不勾=否）";
+      wrap.appendChild(t);
+      var btnRow = document.createElement("div");
+      btnRow.className = "scene-switch";
+      var mk = function(labelText, key){
+        var lbl = document.createElement("label");
+        lbl.className = "opt-item";
+        var cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.onchange = function(){
+          currentAnswers[key] = cb.checked ? "yes" : "no";
+          lbl.classList.toggle("active", cb.checked);
+          updatePromptLabel();
         };
-        mk("已举报", "reported");
-        mk("举报成立", "result");
-        wrap.appendChild(btnRow);
-        subSwitch.appendChild(wrap);
-      });
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(" " + labelText));
+        btnRow.appendChild(lbl);
+        return cb;
+      };
+      mk("已举报", "reported");
+      mk("举报成立", "result");
+      wrap.appendChild(btnRow);
+      subSwitch.appendChild(wrap);
       subSwitch.style.display = "block";
     } else {
       subSwitch.style.display = "none";
