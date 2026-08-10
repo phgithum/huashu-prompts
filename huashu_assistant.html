@@ -12,6 +12,8 @@
   .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .card h2 { font-size:14px; color:#374151; margin-bottom:10px; }
   label { font-size:12px; color:#6b7280; display:block; margin-bottom:4px; }
+  .usage-link { color:#2563eb; text-decoration:none; font-size:12px; font-weight:600; margin-left:6px; padding:1px 6px; border:1px solid #bfdbfe; border-radius:6px; background:#eff6ff; }
+  .usage-link:hover { background:#dbeafe; }
   input[type=password], input[type=text], select, textarea {
     width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px;
     font-size:14px; font-family:inherit; background:#fff; color:#1f2933;
@@ -101,7 +103,7 @@
     <h2>⚙️ 设置（首次使用填一次，之后自动记住）</h2>
     <div class="row">
       <div class="grow">
-        <label>DeepSeek API Key</label>
+        <label>DeepSeek API Key <a class="usage-link" href="https://platform.deepseek.com/usage" target="_blank" rel="noopener">查用量 ↗</a></label>
         <input type="password" id="apiKey" placeholder="sk-... 在 platform.deepseek.com 生成" autocomplete="off">
       </div>
       <div class="grow">
