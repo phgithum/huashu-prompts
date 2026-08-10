@@ -80,6 +80,7 @@
 
   <div class="card">
     <h2>✍️ 顾客原话（当前场景：<span id="sceneLabel">-</span>）</h2>
+    <div style="font-size:12px;color:#0e7490;margin-bottom:6px;">💬 输入框不清空=同一对话继续追问；点「清空」=开新对话</div>
     <textarea id="input" placeholder="把顾客的原话整段粘进来，包括情绪化的骂人话也行，我来处理&#10;&#10;例：你们支付宝凭什么冻结我账户！我钱呢？我要报警！"></textarea>
     <div class="actions">
       <button class="primary" id="send">生成话术</button>
@@ -154,6 +155,8 @@
   var RULES_SOURCE = "内置规则";
 
   var scene = localStorage.getItem(SCENE_STORE) || "scam";
+  var chatHistory = [];      // 连续对话历史 {role, content}
+  var lastSentText = "";     // 上次已发送的输入框内容
   var buttons = {};
   var questionButtons = {};
   var currentAnswers = {};
@@ -343,20 +346,33 @@
 
   async function send(){
     var key = apiKeyInput.value.trim();
-    var text = inputEl.value.trim();
+    var full = inputEl.value;
     if(!key){ status("请先填 API Key 并保存", true); apiKeyInput.focus(); return; }
-    if(!text){ status("请先粘贴顾客原话", true); inputEl.focus(); return; }
+    if(!full.trim()){ status("请先粘贴顾客原话", true); inputEl.focus(); return; }
+    // 连续对话：输入框以已发送内容开头 → 只取新增部分；被改动过 → 视为新对话
+    var text = "";
+    if(full.startsWith(lastSentText) && lastSentText !== ""){
+      text = full.slice(lastSentText.length).trim();
+      if(!text){ status("请先输入新内容，或点「清空」开新对话", true); inputEl.focus(); return; }
+    } else {
+      chatHistory = [];
+      lastSentText = "";
+      text = full.trim();
+    }
     saveAll();
     sendBtn.disabled = true; copyBtn.disabled = true;
     outputEl.textContent = ""; outputEl.classList.remove("empty");
-    status("生成中…（" + sceneName(scene).name + "场景）");
+    status("生成中…（" + sceneName(scene).name + "场景" + (chatHistory.length ? " · 连续对话" : "") + "）");
+
+    // 历史轮数限制，防无限膨胀
+    if(chatHistory.length > 10){ chatHistory = chatHistory.slice(-10); }
+    var messages = [{ role: "system", content: currentPrompt() }]
+      .concat(chatHistory)
+      .concat([{ role: "user", content: text }]);
 
     var body = {
       model: modelSelect.value,
-      messages: [
-        { role: "system", content: currentPrompt() },
-        { role: "user", content: text }
-      ],
+      messages: messages,
       thinking: { type: "disabled" },
       max_tokens: 400,
       temperature: 0.7,
@@ -396,7 +412,10 @@
           } catch(e){}
         }
       }
-      status("✓ 完成");
+      status("✓ 完成" + (chatHistory.length ? "（连续对话已记录，不清空可继续追问）" : ""));
+      chatHistory.push({ role: "user", content: text });
+      chatHistory.push({ role: "assistant", content: outputEl.textContent.trim() });
+      lastSentText = inputEl.value;
       copyBtn.disabled = !outputEl.textContent.trim();
     } catch(err){
       status("出错：" + err.message, true);
@@ -468,7 +487,7 @@
       var out = (outputEl.textContent || "").trim();
       if(t === out || t === lastGen) return;            // 自己生成的话术不触发
       lastClip = t;
-      inputEl.value = t;
+      inputEl.value = inputEl.value.trim() ? inputEl.value.replace(/\s+$/, "") + "\n" + t : t;
       status("⚡ 检测到新消息，自动生成中…");
       await send();
       lastGen = (outputEl.textContent || "").trim();
@@ -479,7 +498,7 @@
   sendBtn.onclick = send;
   saveBtn.onclick = saveAll;
   copyBtn.onclick = copy;
-  clearBtn.onclick = function(){ inputEl.value=""; inputEl.focus(); };
+  clearBtn.onclick = function(){ inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
   clearKeyBtn.onclick = function(){ localStorage.removeItem(KEY_STORE); apiKeyInput.value=""; status("已清除 Key"); };
   inputEl.addEventListener("keydown", function(e){
     if((e.ctrlKey||e.metaKey) && e.key === "Enter"){ e.preventDefault(); send(); }
