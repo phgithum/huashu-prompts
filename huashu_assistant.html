@@ -289,6 +289,10 @@
     var info = sceneName(scene);
     var prompts = info.prompts || {};
     var p = prompts[currentPromptId] || PROMPTS[scene] || PROMPTS.scam;
+    var isAngry = checkedPrompts.some(function(x){ return x.indexOf("\u987e\u5ba2\u60c5\u7eea") >= 0; });
+    if(isAngry){
+      p = "【重安抚模式】\u987e\u5ba2\u60c5\u7eea\u975e\u5e38\u6fc0\u52a8\uff08\u9a82\u4eba/\u54ed\u8bc9/\u6781\u5ea6\u6124\u6012\uff09\uff0c\u6574\u6bb5\u8bdd\u672f\u5fc5\u987b\u6309\u4ee5\u4e0b\u6807\u51c6\u91cd\u5199\uff1a\n1. \u5f00\u5934\u7b2c\u4e00\u53e5\u5fc5\u987b\u5148\u628a\u60c5\u7eea\u63a5\u4f4f\uff1a\u5171\u60c5\u4ed6\u7684\u7126\u6025/\u6124\u6012/\u65e0\u52a9\uff0c\u8ba9\u987e\u5ba2\u611f\u5230\u88ab\u7406\u89e3\uff0c\u7edd\u4e0d\u80fd\u4e0a\u6765\u5c31\u8bb2\u5904\u7406\u6d41\u7a0b\n2. \u5168\u7a0b\u8bed\u6c14\u66f4\u8f6f\u66f4\u6162\uff0c\u77ed\u53e5\u5206\u6bb5\uff0c\u591a\u7528\u201c\u60a8\u522b\u6025\u201d\u201c\u60a8\u5148\u7f13\u7f13\u201d\u201c\u5c0f\u4e8c\u7406\u89e3\u60a8\u201d\u8fd9\u7c7b\u7a33\u60c5\u7eea\u7684\u8bdd\n3. \u5c11\u8bb2\u63aa\u65bd\u3001\u5c11\u8bb2\u6d41\u7a0b\u7ec6\u8282\u3001\u4e0d\u5c55\u5f00\u89e3\u91ca\uff0c\u7b49\u60c5\u7eea\u5e73\u4e86\u518d\u8f7b\u63cf\u6de1\u5199\u5e26\u4e00\u53e5\u80fd\u505a\u7684\u4e8b\n4. \u7edd\u4e0d\u6307\u8d23\u987e\u5ba2\u3001\u4e0d\u53cd\u9a73\u3001\u4e0d\u8bb2\u5927\u9053\u7406\u3001\u4e0d\u786c\u521a\n5. \u6536\u5c3e\u5fc5\u987b\u662f\u5b89\u629a\uff0b\u7ed9\u4e00\u4e2a\u5c0f\u76fc\u5934\uff08\u5c0f\u4e8c\u4f1a\u5e2e\u60a8\u5f04/\u60a8\u7559\u610f\u7ed3\u679c\uff09\uff0c\u4e0d\u8981\u786c\u90e6\u90e6\u7684\u795d\u798f\n6. \u6574\u4f53\u50cf\u670b\u53cb\u5728\u529d\u6170\uff0c\u4e0d\u50cf\u5ba2\u670d\u5728\u8d70\u6d41\u7a0b\n\n" + p;
+    }
     if(checkedPrompts.length){
       p = p + "\n【附加指令】" + checkedPrompts.join("\n");
     }
@@ -430,34 +434,54 @@
     } else { fallbackCopy(t); }
   }
 
-  // 人文关怀按时间段分池
+  // 人文关怀：普通版按时段分池（纯收尾语，语境贴合时段）
   var CARE_MORNING = [
-    "亲亲，新的一天，祝您一切顺顺利利的～",
-    "亲亲，祝您今天工作顺利，心情美美的～",
-    "亲亲，记得吃早饭哦，祝您今天顺心如意～",
-    "亲亲，愿您今天遇见的都是好事，有需要随时找小二～"
+    "亲亲，新的一天，福气满满，昨天的烦心事就让它过去吧，别伤心啦～",
+    "亲亲，新的一天开始啦，愿您今天顺顺利利，心情也美美的～",
+    "亲亲，早上记得吃早饭哦，日子会慢慢好起来的，福气都在后头呢～",
+    "亲亲，愿您今天遇见的都是好事，开开心心过好每一天～",
+    "亲亲，新的一天啦，别想太多，照顾好自己，好运自然来～",
+    "亲亲，祝您今天工作顺利、事事顺心，有需要随时找小二～"
   ];
   var CARE_NOON = [
-    "亲亲，忙了一上午，记得按时吃饭哦～",
-    "亲亲，午休时间到，先休息一下，下午继续加油呀～",
-    "亲亲，中午啦，记得吃饭，身体是革命的本钱哦～"
+    "亲亲，忙了一上午，记得按时吃饭哦，身体要紧～",
+    "亲亲，中午啦，先放下手头的事，好好吃顿饭休息下～",
+    "亲亲，午休时间到，歇一歇，下午继续加油呀～",
+    "亲亲，记得吃饭哦，吃饱了心情也会好起来的～",
+    "亲亲，中午好好休息，下午顺顺利利的～"
   ];
   var CARE_AFTERNOON = [
     "亲亲，祝您下午顺顺利利的～",
     "亲亲，下午也要开开心心的呀，有需要随时找小二～",
-    "亲亲，愿您心情舒畅，事事顺心～"
+    "亲亲，愿您心情舒畅，事事顺心～",
+    "亲亲，下午啦，喝口水歇歇，别太累着自己～",
+    "亲亲，祝您下午一切顺利，好事多多～"
   ];
   var CARE_EVENING = [
-    "亲亲，今天辛苦您啦，早点休息哦～",
-    "亲亲，忙了一天，好好放松一下，祝您晚上愉快～",
-    "亲亲，注意休息，别熬太晚哦～"
+    "亲亲，今天辛苦您啦，晚上好好放松，早点休息哦～",
+    "亲亲，忙了一天，晚上就别想那些烦心事了，早点休息～",
+    "亲亲，晚上注意休息，别熬夜，身体是自己的～",
+    "亲亲，晚上啦，把不开心都丢到一边，睡个好觉～",
+    "亲亲，今天辛苦啦，晚上吃好点，好好犒劳自己～",
+    "亲亲，晚上注意保暖，早点歇着，有需要随时找小二～"
   ];
   var CARE_NIGHT = [
     "亲亲，夜深啦，这么晚还在处理事情，早点休息哦，身体要紧～",
     "亲亲，已经很晚啦，事情明天再说也不迟，照顾好自己呀～",
-    "亲亲，夜深了，注意身体，早点睡哦，祝您晚安～"
+    "亲亲，夜深了，注意身体，早点睡哦，祝您晚安～",
+    "亲亲，这么晚了，快去睡吧，养足精神明天才有好状态～",
+    "亲亲，别熬太晚啦，睡个好觉，明天又是新的一天～"
   ];
-  function carePhrases(){
+  // 情绪激动版：重安抚收尾（先接情绪，再给盼头，最后关怀）
+  var CARE_CALM = [
+    "亲亲，您先消消气，您的心情小二特别理解，这事儿咱们一起想办法，您先别急，照顾好自己，气坏了身子不值当～",
+    "亲亲，您别气着自己，小二这边能帮的一定帮您弄，您先缓缓，这事儿小二记在心上了～",
+    "亲亲，您受委屈了，搁谁遇到这事儿都窝火，您先歇口气，咱们一步一步来，小二陪着您～",
+    "亲亲，您先平复下心情，气大伤身，您的事儿小二会尽力帮您处理的，您放心，别太着急～",
+    "亲亲，真的很抱歉让您这么糟心，您先喝口水缓一缓，事情总有解决的办法，小二陪您一起处理～",
+    "亲亲，您别太难受了，气坏了身体得不偿失，您信小二一回，能帮的绝对不含糊，您先休息下～"
+  ];
+  function carePool(){
     var h = new Date().getHours();
     if(h >= 5 && h < 11) return CARE_MORNING;
     if(h >= 11 && h < 14) return CARE_NOON;
@@ -465,17 +489,30 @@
     if(h >= 18 && h < 23) return CARE_EVENING;
     return CARE_NIGHT;
   }
+  var lastCareKey = "";
   var careBtn = $("care");
   careBtn.onclick = function(){
-    var pool = carePhrases();
-    var t = pool[Math.floor(Math.random() * pool.length)];
+    var isAngry = checkedPrompts.some(function(x){ return x.indexOf("\u987e\u5ba2\u60c5\u7eea") >= 0; });
+    var pool = isAngry ? CARE_CALM : carePool();
+    var idx = Math.floor(Math.random() * pool.length);
+    var key = (isAngry ? "c" : pool === CARE_MORNING ? "m" : pool === CARE_NOON ? "n" : pool === CARE_AFTERNOON ? "a" : pool === CARE_EVENING ? "e" : "t") + idx;
+    if(pool.length > 1 && lastCareKey === key){
+      idx = (idx + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
+    }
+    lastCareKey = key;
+    var t = pool[idx];
+    // 融合收尾问句：普通版随机带，情绪激动版带软化问句
+    if(isAngry){
+      t = t + "\n\u60a8\u770b\u8fd8\u6709\u4ec0\u4e48\u5c0f\u4e8c\u80fd\u5e2e\u4e0a\u5fd9\u7684\uff0c\u968f\u65f6\u8ddf\u5c0f\u4e8c\u8bf4\uff5e";
+    } else if(Math.random() < 0.5){
+      t = t + "\n\u8fd8\u6709\u4ec0\u4e48\u53ef\u4ee5\u5e2e\u60a8\u7684\u5417\uff1f";
+    }
     outputEl.textContent = t;
     outputEl.classList.remove("empty");
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(t).then(function(){ status("💕 已生成并复制，去发送吧"); }, function(){ fallbackCopy(t); });
     } else { fallbackCopy(t); }
   };
-
   function fallbackCopy(t){
     var ta = document.createElement("textarea");
     ta.value = t; document.body.appendChild(ta); ta.select();
