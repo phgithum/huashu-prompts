@@ -55,6 +55,18 @@
   <div class="sub">选场景 → 粘顾客原话 → 话术秒出。规则已内置：先安抚、像真人、不承诺、不说"冻结"。</div>
 
   <div class="card">
+    <h2>⚡ 自动感应（复制即生成）</h2>
+    <div style="font-size:13px;color:#6b7280;line-height:1.7;">
+      开启后：在客服系统里 <b>Ctrl+C 复制顾客消息</b>，切回本页<b>自动生成</b>话术，你点"复制话术"发送。<br>
+      状态：<span id="autoStatus" style="color:#9ca3af;font-weight:600;">未开启</span>
+    </div>
+    <div class="actions">
+      <button class="primary" id="autoBtn">⚡ 开启自动感应</button>
+      <span style="font-size:12px;color:#9ca3af;">首次开启浏览器会问"允许查看剪贴板"，点允许</span>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>🎯 场景切换</h2>
     <div class="scene-switch" id="sceneSwitch"></div>
     <div class="scene-switch" id="subSwitch" style="display:none;margin-top:8px;"></div>
@@ -123,6 +135,7 @@
       copyBtn = $("copy"), saveBtn = $("saveKey"), clearBtn = $("clear"), clearKeyBtn = $("clearKey"),
       sceneSwitch = $("sceneSwitch"), ruleInfo = $("ruleInfo"),
       sceneLabel = $("sceneLabel"), sceneTag = $("sceneTag");
+      autoBtn = $("autoBtn"), autoStatus = $("autoStatus");
 
   var SCENES = [{"id": "scam", "name": "被骗", "emoji": "😭"}, {"id": "gamble", "name": "赌博", "emoji": "🎲"}];
 
@@ -393,6 +406,63 @@
     ta.value = t; document.body.appendChild(ta); ta.select();
     try { document.execCommand("copy"); status("✓ 已复制"); } catch(e){ status("复制失败，请手动全选复制", true); }
     document.body.removeChild(ta);
+  }
+
+  // ===== 自动感应：复制即生成 =====
+  var AUTO_STORE = "huashu_auto";
+  var autoOn = false, lastClip = "", lastGen = "";
+  if(localStorage.getItem(AUTO_STORE) === "1"){
+    autoOn = true;
+    autoBtn.textContent = "关闭自动感应";
+    autoStatus.textContent = "已开启";
+    navigator.clipboard.readText().then(function(){}, function(){
+      autoOn = false; autoBtn.textContent = "⚡ 开启自动感应";
+      autoStatus.textContent = "权限失效，点按钮重新开启";
+      autoStatus.style.color = "#dc2626";
+    });
+  }
+  autoBtn.onclick = async function(){
+    if(!autoOn){
+      try{
+        var t = (await navigator.clipboard.readText()) || "";
+        autoOn = true; lastClip = t;
+        autoBtn.textContent = "关闭自动感应";
+        autoStatus.textContent = "已开启：复制顾客消息后切回本页，自动生成";
+        autoStatus.style.color = "#0ea5e9";
+        localStorage.setItem(AUTO_STORE, "1");
+        status("✓ 自动感应已开启");
+      }catch(e){
+        autoStatus.textContent = "授权失败：" + (e && e.message ? e.message : "浏览器拒绝了剪贴板权限") + "（需 HTTPS 网页版 + 点击允许）";
+        autoStatus.style.color = "#dc2626";
+      }
+    } else {
+      autoOn = false;
+      autoBtn.textContent = "⚡ 开启自动感应";
+      autoStatus.textContent = "已关闭";
+      autoStatus.style.color = "#9ca3af";
+      localStorage.removeItem(AUTO_STORE);
+    }
+  };
+  function onPageBack(){
+    if(!autoOn || document.hidden) return;
+    setTimeout(checkClipboard, 400);
+  }
+  document.addEventListener("visibilitychange", onPageBack);
+  window.addEventListener("focus", onPageBack);
+  async function checkClipboard(){
+    try{
+      var t = (await navigator.clipboard.readText() || "").trim();
+      if(!t || t.length < 5) return;                    // 太短不触发
+      if(t === lastClip) return;                        // 没变化不触发
+      var out = (outputEl.textContent || "").trim();
+      if(t === out || t === lastGen) return;            // 自己生成的话术不触发
+      lastClip = t;
+      inputEl.value = t;
+      status("⚡ 检测到新消息，自动生成中…");
+      await send();
+      lastGen = (outputEl.textContent || "").trim();
+      if(lastGen) status("✓ 已自动生成，点\"复制话术\"去发送");
+    }catch(e){ /* 权限暂不可用则静默 */ }
   }
 
   sendBtn.onclick = send;
