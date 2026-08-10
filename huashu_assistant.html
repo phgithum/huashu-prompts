@@ -208,19 +208,24 @@
         var btnRow = document.createElement("div");
         btnRow.className = "scene-switch";
         questionButtons[q.id] = {};
-        q.options.forEach(function(o){
+        // 简化为两个勾选框：勾=是，不勾=否
+        var mk = function(labelText, key){
           var lbl = document.createElement("label");
           lbl.className = "opt-item";
           var cb = document.createElement("input");
           cb.type = "checkbox";
           cb.onchange = function(){
-            if(cb.checked){ setAnswer(q.id, o.id, q); }
+            currentAnswers[key] = cb.checked ? "yes" : "no";
+            lbl.classList.toggle("active", cb.checked);
+            updatePromptLabel();
           };
           lbl.appendChild(cb);
-          lbl.appendChild(document.createTextNode(" " + o.label));
+          lbl.appendChild(document.createTextNode(" " + labelText));
           btnRow.appendChild(lbl);
-          questionButtons[q.id][o.id] = lbl;
-        });
+          return cb;
+        };
+        mk("已举报", "reported");
+        mk("举报成立", "result");
         wrap.appendChild(btnRow);
         subSwitch.appendChild(wrap);
       });
@@ -273,9 +278,8 @@
     var result = currentAnswers["result"];
     var id = "before";
     if(reported === "yes"){
-      if(result === "no"){ id = "rejected"; }
-      else if(result === "yes"){ id = "refund_denied"; }
-      else { id = "after"; }
+      if(result === "yes"){ id = "refund_denied"; }
+      else { id = "rejected"; }
     }
     currentPromptId = id;
     var labels = info.promptLabels || {};
