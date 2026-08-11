@@ -142,6 +142,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var apiKeyInput = $("apiKey"), modelSelect = $("model"), inputEl = $("input"),
     transferCount = 0,
+      checkboxEls = {},
       outputEl = $("output"), statusEl = $("status"), sendBtn = $("send"),
       copyBtn = $("copy"), saveBtn = $("saveKey"), clearBtn = $("clear"), clearKeyBtn = $("clearKey"),
       sceneSwitch = $("sceneSwitch"), ruleInfo = $("ruleInfo"),
@@ -226,6 +227,7 @@
           lbl.className = "check-item";
           var cb = document.createElement("input");
           cb.type = "checkbox";
+          checkboxEls[q.id] = cb;
           cb.onchange = function(){
             currentAnswers[q.id] = cb.checked ? "yes" : "no";
             updatePromptLabel();
@@ -469,6 +471,22 @@
       chatHistory = [];
       lastSentText = "";
       text = full.trim();
+    }
+    // 自动识别举报状态：未手动勾选时，从顾客原话判断是否已举报（仅被骗勾选框场景）
+    var sinfo = sceneName(scene);
+    if(sinfo.checkboxMode && currentAnswers["reported"] !== "yes" && currentAnswers["result"] !== "yes"){
+      var exWords = /别的地方举报|其他地方举报|别的平台|其他平台|在别处举报|微信举报|闲鱼举报|抖音举报|别的APP|别的软件/;
+      var repWords = /举报了|提交举报|举报提交|举报成功|审核中|举报过|给不给处理|还没出|还没消息|没出结果|催举报|举报催|提示我举报/;
+      if(!exWords.test(text) && repWords.test(text)){
+        currentAnswers["reported"] = "yes";
+        if(checkboxEls["reported"]){ checkboxEls["reported"].checked = true; }
+        currentPromptId = "after";
+        var labels = sinfo.promptLabels || {};
+        var label = labels["after"] || "举报后·等结果";
+        sceneLabel.textContent = sinfo.name + " · " + label;
+        sceneTag.textContent = sinfo.name + " · " + label;
+        status("✓ 自动识别：顾客已举报 → 按举报后话术");
+      }
     }
     saveAll();
     sendBtn.disabled = true; copyBtn.disabled = true;
