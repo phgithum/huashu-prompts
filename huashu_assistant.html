@@ -447,6 +447,22 @@
       lastSentText = "";
       text = full.trim();
     }
+    // 转交/转接关键词 → 直接生成预置转接话术，不调 AI
+    var transferWords = ["转交", "转接", "转给"];
+    var isTransfer = transferWords.some(function(w){ return text.indexOf(w) >= 0; });
+    if(isTransfer){
+      var tpl = [
+        "亲亲您别急，您这个情况小二帮您仔细看过了，您的问题转给专门负责的同事跟进会更高效，他们处理这个更专业。小二这就帮您转交过去，您看可以吗？"
+      ];
+      if(/为什么要转|为什么转|咋还要转|怎么还转/.test(text)){
+        tpl = ["咱们客服是按问题类型分工的，您这个类型有专门负责的同事，他们天天处理这个，比小二更有经验，转过去对您更有利，您放心"];
+      }
+      outputEl.textContent = tpl.join("\n");
+      outputEl.classList.remove("empty");
+      chatHistory = [];
+      status("✓ 预置转接话术（未调用 AI）");
+      return;
+    }
     saveAll();
     sendBtn.disabled = true; copyBtn.disabled = true;
     outputEl.textContent = ""; outputEl.classList.remove("empty");
