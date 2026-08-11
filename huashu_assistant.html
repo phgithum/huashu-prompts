@@ -327,9 +327,6 @@
     if(info.autoGenerate && !chatHistory.length){
       genStep = (genStep % 5) + 1;
       p = p + "\n【本次生成要求】现在生成第" + genStep + "步（只输出这一步的内容，1-2句一小段，不要输出其他步骤）。";
-      if(lastGeneratedText){
-        p = p + "。上次生成的是：" + lastGeneratedText.slice(0, 60) + "……这次必须用完全不同的说法重新表达这一步的意思，句式、开头、用词都不能和上次重复";
-      }
     }
     var isAngry = checkedPrompts.some(function(x){ return x.indexOf("\u987e\u5ba2\u60c5\u7eea") >= 0; });
     if(isAngry){
