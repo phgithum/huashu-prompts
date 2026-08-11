@@ -142,6 +142,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var apiKeyInput = $("apiKey"), modelSelect = $("model"), inputEl = $("input"),
     transferCount = 0,
+      suppressAuto = false,
       checkboxEls = {},
       outputEl = $("output"), statusEl = $("status"), sendBtn = $("send"),
       copyBtn = $("copy"), saveBtn = $("saveKey"), clearBtn = $("clear"), clearKeyBtn = $("clearKey"),
@@ -230,6 +231,7 @@
           checkboxEls[q.id] = cb;
           cb.onchange = function(){
             currentAnswers[q.id] = cb.checked ? "yes" : "no";
+            if(q.id === "reported"){ suppressAuto = true; }  // 用户手动动过勾选，本次对话不再自动勾
             updatePromptLabel();
           };
           lbl.appendChild(cb);
@@ -472,13 +474,20 @@
       lastSentText = "";
       text = full.trim();
     }
-    // 自动识别举报状态：只提示，不自动勾选、不自动切换（识别不到=按没举报处理）
+    // 自动识别举报状态：识别到已举报→自动勾选"已举报"并走举报后话术；取消勾选=没举报（本次对话不再自动勾）
     var sinfo = sceneName(scene);
-    if(sinfo.checkboxMode && currentAnswers["reported"] !== "yes" && currentAnswers["result"] !== "yes"){
+    if(sinfo.checkboxMode && !suppressAuto && currentAnswers["reported"] !== "yes" && currentAnswers["result"] !== "yes"){
       var exWords = /别的地方举报|其他地方举报|别的平台|其他平台|在别处举报|微信举报|闲鱼举报|抖音举报|别的APP|别的软件/;
       var repWords = /举报了|提交举报|举报提交|举报成功|审核中|举报过|给不给处理|还没出|还没消息|没出结果|催举报|举报催|提示我举报/;
       if(!exWords.test(text) && repWords.test(text)){
-        status("识别到：顾客已举报（如需请手动勾选「已举报」）");
+        currentAnswers["reported"] = "yes";
+        if(checkboxEls["reported"]){ checkboxEls["reported"].checked = true; }
+        currentPromptId = "after";
+        var labels = sinfo.promptLabels || {};
+        var label = labels["after"] || "举报后·等结果";
+        sceneLabel.textContent = sinfo.name + " · " + label;
+        sceneTag.textContent = sinfo.name + " · " + label;
+        status("✓ 自动识别：顾客已举报 → 已勾选「已举报」，按举报后话术");
       }
     }
     saveAll();
@@ -713,7 +722,7 @@
   sendBtn.onclick = send;
   saveBtn.onclick = saveAll;
   copyBtn.onclick = copy;
-  clearBtn.onclick = function(){ transferCount=0; inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
+  clearBtn.onclick = function(){ transferCount=0; suppressAuto=false; inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
   clearKeyBtn.onclick = function(){ localStorage.removeItem(KEY_STORE); apiKeyInput.value=""; status("已清除 Key"); };
   inputEl.addEventListener("keydown", function(e){
     if((e.ctrlKey||e.metaKey) && e.key === "Enter"){ e.preventDefault(); send(); }
