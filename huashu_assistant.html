@@ -370,7 +370,10 @@
     var key = apiKeyInput.value.trim();
     var full = inputEl.value;
     if(!key){ status("请先填 API Key 并保存", true); apiKeyInput.focus(); return; }
-    if(!full.trim()){ status("请先粘贴顾客原话", true); inputEl.focus(); return; }
+    if(!full.trim()){
+      if(sceneName(scene).autoGenerate){ full = "我的账户被限制了，想咨询一下"; }
+      else { status("请先粘贴顾客原话", true); inputEl.focus(); return; }
+    }
     // 连续对话：输入框以已发送内容开头 → 只取新增部分；被改动过 → 视为新对话
     var text = "";
     if(full.startsWith(lastSentText) && lastSentText !== ""){
