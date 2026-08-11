@@ -225,6 +225,11 @@
               lbl.classList.remove("active");
             }
             updatePromptLabel();
+            // 一键生成模式：点选项直接出话术（被骗场景是组合问答，不自动生成）
+            if(info.autoGenerate && cb.checked){
+              chatHistory = []; lastSentText = "";
+              setTimeout(function(){ send(); }, 80);
+            }
           };
           lbl.appendChild(cb);
           lbl.appendChild(document.createTextNode(" " + opt.label));
