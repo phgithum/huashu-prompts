@@ -159,6 +159,7 @@
   var questionButtons = {};
   var currentAnswers = {};
   var currentPromptId = "before";
+  var genStep = 0;    // 赌博分步推进：当前步骤（1-5），点一次+1
   var subSwitch = $("subSwitch");
   var checkSwitch = $("checkSwitch");
   var checkedPrompts = [];
@@ -194,6 +195,7 @@
     sceneTag.textContent = info.name;
     // 问答式子选项构建
     currentPromptId = "before";
+    genStep = 0;
     questionButtons = {};
     currentAnswers = {};
     subSwitch.innerHTML = "";
@@ -231,6 +233,7 @@
             btn.textContent = opt.label;
             btn.onclick = function(){
               btnRow.querySelectorAll("button").forEach(function(other){ other.classList.remove("active"); });
+              if(currentAnswers[q.id] !== opt.id){ genStep = 0; }
               currentAnswers[q.id] = opt.id;
               btn.classList.add("active");
               updatePromptLabel();
@@ -319,19 +322,10 @@
     var info = sceneName(scene);
     var prompts = info.prompts || {};
     var p = prompts[currentPromptId] || PROMPTS[scene] || PROMPTS.scam;
-    // 多样化：一键生成场景每次换个角度，且参考上次结果去重
+    // 分步推进：一键生成场景（赌博）每次点按钮只生成下一步，1-5 循环
     if(info.autoGenerate && !chatHistory.length){
-      var angles = [
-        "措辞换一种风格，共情句用没说过的话，但结构顺序保持不变",
-        "换一些表达，称呼和语气词换着用，但结构顺序保持不变",
-        "把每段的说法换个讲法，别和上次重复，但结构顺序保持不变",
-        "换个措辞风格，更口语自然一点，但结构顺序保持不变",
-        "换种说法表达同样的内容，开头别重复，但结构顺序保持不变"
-      ];
-      p = p + "\n【本次生成要求】" + angles[Math.floor(Math.random()*angles.length)];
-      if(lastGeneratedText){
-        p = p + "。上次已经生成过：" + lastGeneratedText.slice(0, 80) + "……请用完全不同的说法重写，绝不重复";
-      }
+      genStep = (genStep % 5) + 1;
+      p = p + "\n【本次生成要求】现在生成第" + genStep + "步（只输出这一步的内容，1-2句一小段，不要输出其他步骤）。";
     }
     var isAngry = checkedPrompts.some(function(x){ return x.indexOf("\u987e\u5ba2\u60c5\u7eea") >= 0; });
     if(isAngry){
