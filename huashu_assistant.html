@@ -331,12 +331,11 @@
       }
     }
     // 被骗场景兼容（勾选框模式）：reported/result 组合映射
-    // 勾选框：勾=yes，不勾=no。没勾成立 = 不成立（没通过）
-    if(reported === "yes"){
-      if(result === "yes"){ id = "refund_denied"; }
-      else if(result === "no"){ id = "rejected"; }   // 已举报+没勾成立 → 没通过
-      else { id = "after"; }
-    } else if(reported === "no"){ id = "before"; }
+    // 勾选框：勾=yes，不勾=no。勾了成立=不仅举报了而且成立（成立隐含已举报）
+    // result 优先：成立→成立不退；没成立→再看是否已举报（已举报→没通过，没举报→举报前）
+    if(result === "yes"){ id = "refund_denied"; }
+    else if(reported === "yes"){ id = "rejected"; }   // 已举报+没勾成立 → 没通过
+    else { id = "before"; }
     currentPromptId = id;
     var labels = info.promptLabels || {};
     var label = labels[id] || info.name;
