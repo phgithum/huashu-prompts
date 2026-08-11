@@ -158,6 +158,7 @@
   var buttons = {};
   var questionButtons = {};
   var currentAnswers = {};
+  var gambleStep = 1, lastGamblePromptId = "";
   var currentPromptId = "before";
   var subSwitch = $("subSwitch");
   var checkSwitch = $("checkSwitch");
@@ -209,22 +210,39 @@
         var btnRow = document.createElement("div");
         btnRow.className = "scene-switch";
         q.options.forEach(function(opt){
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "opt-item";
-          btn.textContent = opt.label;
-          btn.onclick = function(){
-            btnRow.querySelectorAll("button").forEach(function(other){ other.classList.remove("active"); });
-            currentAnswers[q.id] = opt.id;
-            btn.classList.add("active");
-            updatePromptLabel();
-            // 一键生成模式：点选项直接出话术（被骗场景是组合问答，不自动生成）
-            if(info.autoGenerate){
+          if(info.autoGenerate){
+            // 一键生成场景（赌博）：真按钮，点击即生成一小段，连点推进步骤
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "opt-item";
+            btn.textContent = opt.label;
+            btn.onclick = function(){
+              btnRow.querySelectorAll("button").forEach(function(other){ other.classList.remove("active"); });
+              currentAnswers[q.id] = opt.id;
+              btn.classList.add("active");
+              updatePromptLabel();
+              if(currentPromptId !== lastGamblePromptId){ gambleStep = 1; lastGamblePromptId = currentPromptId; }
+              else { gambleStep++; }
               chatHistory = []; lastSentText = "";
               setTimeout(function(){ send(); }, 80);
-            }
-          };
-          btnRow.appendChild(btn);
+            };
+            btnRow.appendChild(btn);
+          } else {
+            // 组合问答（被骗）：勾选框，选完点生成按钮
+            var lbl = document.createElement("label");
+            lbl.className = "check-item";
+            var cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.onchange = function(){
+              btnRow.querySelectorAll("input").forEach(function(o){ o.checked = false; });
+              cb.checked = true;
+              currentAnswers[q.id] = opt.id;
+              updatePromptLabel();
+            };
+            lbl.appendChild(cb);
+            lbl.appendChild(document.createTextNode(" " + opt.label));
+            btnRow.appendChild(lbl);
+          }
         });
         wrap.appendChild(btnRow);
       });
@@ -300,6 +318,13 @@
     var info = sceneName(scene);
     var prompts = info.prompts || {};
     var p = prompts[currentPromptId] || PROMPTS[scene] || PROMPTS.scam;
+    // 赌博等一键生成场景：按步骤推进，每次只生成一小段
+    if(info.autoGenerate && !chatHistory.length){
+      var stepDef = "";
+      if(scene === "gamble" && currentPromptId){
+        stepDef = "\n【本次生成要求】现在生成第" + gambleStep + "步的那一小段话术（只1-2句，像真人打字发一条消息）。只生成这一小段，不要多写、不要一次输出多段！";
+      }
+    }
     // 多样化：一键生成场景每次换个角度，且参考上次结果去重
     if(info.autoGenerate && !chatHistory.length){
       var angles = [
@@ -310,6 +335,7 @@
         "全部换说法：不同的开场白、不同的连接方式、不同的收尾，不允许和上次有一句相同"
       ];
       p = p + "\n【本次生成要求】" + angles[Math.floor(Math.random()*angles.length)];
+      if(stepDef){ p = p + stepDef; }
       if(lastGeneratedText){
         p = p + "。上次已经生成过：" + lastGeneratedText.slice(0, 80) + "……请用完全不同的说法重写，绝不重复";
       }
