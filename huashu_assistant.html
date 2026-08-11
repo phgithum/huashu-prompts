@@ -12,6 +12,8 @@
   .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .card h2 { font-size:14px; color:#374151; margin-bottom:10px; }
   label { font-size:12px; color:#6b7280; display:block; margin-bottom:4px; }
+  .bal-info { font-size:12px; color:#0ea5e9; cursor:pointer; margin-left:4px; font-weight:600; }
+  .bal-info.err { color:#ef4444; }
   .usage-link { color:#2563eb; text-decoration:none; font-size:12px; font-weight:600; margin-left:6px; padding:1px 6px; border:1px solid #bfdbfe; border-radius:6px; background:#eff6ff; }
   .usage-link:hover { background:#dbeafe; }
   input[type=password], input[type=text], select, textarea {
@@ -37,7 +39,7 @@
   .sub-btn { flex:none; min-width:0; padding:6px 14px; font-size:13px; border-width:1px; }
   .check-item { display:inline-flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:6px 12px; font-size:13px; color:#475569; cursor:pointer; margin-right:8px; margin-top:8px; }
   .check-item input { accent-color:#0ea5e9; }
-  .q-group { margin-top:8px; }
+  .q-group { margin-top:8px; display:flex; flex-wrap:wrap; gap:10px; } .q-col { flex:1; min-width:160px; }
   .q-title { font-size:12px; color:#6b7280; margin-bottom:4px; }
   .q-btn { flex:none; min-width:64px; padding:6px 12px; font-size:13px; border-width:1px; }
   #output { min-height:120px; white-space:pre-wrap; line-height:1.6; font-size:14px; }
@@ -114,7 +116,7 @@
     <summary class="summary-btn">⚙️ 设置（API Key / 模型）</summary>
     <div class="row" style="margin-top:10px;">
       <div class="grow">
-        <label>DeepSeek API Key <a class="usage-link" href="https://platform.deepseek.com/usage" target="_blank" rel="noopener">查用量 ↗</a></label>
+        <label>DeepSeek API Key <a class="usage-link" href="https://platform.deepseek.com/usage" target="_blank" rel="noopener">查用量 ↗</a> <span id="balInfo" class="bal-info" title="点击刷新余额">余额：--</span></label>
         <input type="password" id="apiKey" placeholder="sk-... 在 platform.deepseek.com 生成" autocomplete="off">
       </div>
       <div class="grow">
@@ -204,10 +206,12 @@
       var wrap = document.createElement("div");
       wrap.className = "q-group";
       qs.forEach(function(q){
+        var col = document.createElement("div");
+        col.className = "q-col";
         var t = document.createElement("div");
         t.className = "q-title";
         t.textContent = q.question;
-        wrap.appendChild(t);
+        col.appendChild(t);
         var btnRow = document.createElement("div");
         btnRow.className = "scene-switch";
         if(info.checkboxMode){
@@ -245,7 +249,8 @@
             };
             btnRow.appendChild(btn);
           });
-          wrap.appendChild(btnRow);
+          col.appendChild(btnRow);
+          wrap.appendChild(col);
         }
       });
       subSwitch.appendChild(wrap);
@@ -378,6 +383,26 @@
     localStorage.setItem(KEY_STORE, apiKeyInput.value.trim());
     localStorage.setItem(MODEL_STORE, modelSelect.value);
     status("✓ 已保存，Key 只存在本机");
+    fetchBalance();
+  }
+  async function fetchBalance(){
+    var key = apiKeyInput.value.trim();
+    var el = document.getElementById("balInfo");
+    if(!key){ el.textContent = "余额：--"; el.className = "bal-info"; return; }
+    try{
+      var resp = await fetch("https://api.deepseek.com/user/balance", {
+        headers: { "Authorization": "Bearer " + key, "Accept": "application/json" }
+      });
+      if(!resp.ok) throw new Error(resp.status);
+      var j = await resp.json();
+      var cny = (j.balance_infos || []).filter(function(b){ return b.currency === "CNY"; })[0];
+      var v = cny ? cny.total_balance : (j.balance_infos && j.balance_infos[0] ? j.balance_infos[0].total_balance : "--");
+      el.textContent = "余额：¥" + v;
+      el.className = "bal-info";
+    }catch(e){
+      el.textContent = "余额：查询失败";
+      el.className = "bal-info err";
+    }
   }
 
   function status(msg, isErr){
@@ -574,6 +599,10 @@
   // ===== 自动感应：复制即生成 =====
   var AUTO_STORE = "huashu_auto";
   var autoOn = false, lastClip = "", lastGen = "";
+  fetchBalance();
+  setInterval(fetchBalance, 5*60*1000);
+  var balEl = document.getElementById("balInfo");
+  if(balEl){ balEl.onclick = function(){ balEl.textContent = "余额：刷新中…"; fetchBalance(); }; }
   if(localStorage.getItem(AUTO_STORE) === "1"){
     autoOn = true;
     autoBtn.textContent = "关闭自动感应";
