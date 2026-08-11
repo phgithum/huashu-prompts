@@ -201,30 +201,37 @@
     if(qs.length){
       var wrap = document.createElement("div");
       wrap.className = "q-group";
-      var t = document.createElement("div");
-      t.className = "q-title";
-      t.textContent = "举报状态（勾选=是，不勾=否）";
-      wrap.appendChild(t);
-      var btnRow = document.createElement("div");
-      btnRow.className = "scene-switch";
-      var mk = function(labelText, key){
-        var lbl = document.createElement("label");
-        lbl.className = "opt-item";
-        var cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.onchange = function(){
-          currentAnswers[key] = cb.checked ? "yes" : "no";
-          lbl.classList.toggle("active", cb.checked);
-          updatePromptLabel();
-        };
-        lbl.appendChild(cb);
-        lbl.appendChild(document.createTextNode(" " + labelText));
-        btnRow.appendChild(lbl);
-        return cb;
-      };
-      mk("已举报", "reported");
-      mk("举报成立", "result");
-      wrap.appendChild(btnRow);
+      qs.forEach(function(q){
+        var t = document.createElement("div");
+        t.className = "q-title";
+        t.textContent = q.question;
+        wrap.appendChild(t);
+        var btnRow = document.createElement("div");
+        btnRow.className = "scene-switch";
+        q.options.forEach(function(opt){
+          var lbl = document.createElement("label");
+          lbl.className = "opt-item";
+          var cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.onchange = function(){
+            if(cb.checked){
+              btnRow.querySelectorAll("input").forEach(function(other){
+                if(other !== cb){ other.checked = false; other.closest("label").classList.remove("active"); }
+              });
+              currentAnswers[q.id] = opt.id;
+              lbl.classList.add("active");
+            } else {
+              delete currentAnswers[q.id];
+              lbl.classList.remove("active");
+            }
+            updatePromptLabel();
+          };
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(" " + opt.label));
+          btnRow.appendChild(lbl);
+        });
+        wrap.appendChild(btnRow);
+      });
       subSwitch.appendChild(wrap);
       subSwitch.style.display = "block";
     } else {
@@ -274,10 +281,18 @@
     var reported = currentAnswers["reported"];
     var result = currentAnswers["result"];
     var id = "before";
+    // 通用：取最后一个已答问题的答案作为 promptId（赌博=limit单选）
+    var qs = info.questions || [];
+    for(var i=0;i<qs.length;i++){
+      var a = currentAnswers[qs[i].id];
+      if(a){ id = a; }
+    }
+    // 被骗场景兼容：reported/result 组合映射
     if(reported === "yes"){
       if(result === "yes"){ id = "refund_denied"; }
-      else { id = "rejected"; }
-    }
+      else if(result === "no"){ id = "rejected"; }
+      else { id = "after"; }
+    } else if(reported === "no"){ id = "before"; }
     currentPromptId = id;
     var labels = info.promptLabels || {};
     var label = labels[id] || info.name;
