@@ -305,10 +305,11 @@
         if(a){ id = a; }
       }
     }
-    // 被骗场景兼容：reported/result 组合映射
+    // 被骗场景兼容（勾选框模式）：reported/result 组合映射
+    // 勾选框：勾=yes，不勾=no。没勾成立 = 不成立（没通过）
     if(reported === "yes"){
       if(result === "yes"){ id = "refund_denied"; }
-      else if(result === "no"){ id = "rejected"; }
+      else if(result === "no"){ id = "rejected"; }   // 已举报+没勾成立 → 没通过
       else { id = "after"; }
     } else if(reported === "no"){ id = "before"; }
     currentPromptId = id;
