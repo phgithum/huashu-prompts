@@ -141,6 +141,7 @@
   var SCENE_STORE = "huashu_scene";
   var $ = function(id){ return document.getElementById(id); };
   var apiKeyInput = $("apiKey"), modelSelect = $("model"), inputEl = $("input"),
+    transferCount = 0,
       outputEl = $("output"), statusEl = $("status"), sendBtn = $("send"),
       copyBtn = $("copy"), saveBtn = $("saveKey"), clearBtn = $("clear"), clearKeyBtn = $("clearKey"),
       sceneSwitch = $("sceneSwitch"), ruleInfo = $("ruleInfo"),
@@ -433,6 +434,28 @@
     var key = apiKeyInput.value.trim();
     var full = inputEl.value;
     if(!key){ status("请先填 API Key 并保存", true); apiKeyInput.focus(); return; }
+    // 转交/转接关键词 → 预置话术分档：第1次转接话术，连续点=顾客不接受，出安抚应对（不调 AI）
+    var transferWords = ["转交", "转接", "转给"];
+    var isTransfer = transferWords.some(function(w){ return full.indexOf(w) >= 0; });
+    if(isTransfer){
+      transferCount++;
+      var tpl = "";
+      if(/为什么要转|为什么转|咋还要转|怎么还转/.test(full)){
+        tpl = "咱们客服是按问题类型分工的，您这个类型有专门负责的同事，他们天天处理这个，比小二更有经验，转过去对您更有利，您放心";
+      } else if(transferCount === 1){
+        tpl = "亲亲您别急，您这个情况小二帮您仔细看过了，您的问题转给专门负责的同事跟进会更高效，他们处理这个更专业。小二这就帮您转交过去，您看可以吗？";
+      } else if(transferCount === 2){
+        tpl = "亲亲没关系的，您不愿意转咱就不转，您的问题小二这边也帮您看着，能帮您处理的咱一步步来，您看行吗？";
+      } else {
+        tpl = "亲亲您别急，小二特别理解您，转了怕又要从头说一遍，搁谁都嫌麻烦。您放心，您的问题一定有人接着帮您处理，小二这就帮您看看还有没有其他能帮上忙的";
+      }
+      outputEl.textContent = tpl;
+      outputEl.classList.remove("empty");
+      chatHistory = [];
+      lastSentText = full;
+      status("✓ 预置转接话术·第" + transferCount + "档（未调用 AI）");
+      return;
+    }
     if(!full.trim()){
       if(sceneName(scene).autoGenerate){ full = "我的账户被限制了，想咨询一下"; }
       else { status("请先粘贴顾客原话", true); inputEl.focus(); return; }
@@ -446,22 +469,6 @@
       chatHistory = [];
       lastSentText = "";
       text = full.trim();
-    }
-    // 转交/转接关键词 → 直接生成预置转接话术，不调 AI
-    var transferWords = ["转交", "转接", "转给"];
-    var isTransfer = transferWords.some(function(w){ return text.indexOf(w) >= 0; });
-    if(isTransfer){
-      var tpl = [
-        "亲亲您别急，您这个情况小二帮您仔细看过了，您的问题转给专门负责的同事跟进会更高效，他们处理这个更专业。小二这就帮您转交过去，您看可以吗？"
-      ];
-      if(/为什么要转|为什么转|咋还要转|怎么还转/.test(text)){
-        tpl = ["咱们客服是按问题类型分工的，您这个类型有专门负责的同事，他们天天处理这个，比小二更有经验，转过去对您更有利，您放心"];
-      }
-      outputEl.textContent = tpl.join("\n");
-      outputEl.classList.remove("empty");
-      chatHistory = [];
-      status("✓ 预置转接话术（未调用 AI）");
-      return;
     }
     saveAll();
     sendBtn.disabled = true; copyBtn.disabled = true;
@@ -695,7 +702,7 @@
   sendBtn.onclick = send;
   saveBtn.onclick = saveAll;
   copyBtn.onclick = copy;
-  clearBtn.onclick = function(){ inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
+  clearBtn.onclick = function(){ transferCount=0; inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
   clearKeyBtn.onclick = function(){ localStorage.removeItem(KEY_STORE); apiKeyInput.value=""; status("已清除 Key"); };
   inputEl.addEventListener("keydown", function(e){
     if((e.ctrlKey||e.metaKey) && e.key === "Enter"){ e.preventDefault(); send(); }
