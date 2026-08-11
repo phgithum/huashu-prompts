@@ -94,7 +94,8 @@
       "promptLabels": {
         "can": "限制（可解除）",
         "cannot": "限制（无法解除）"
-      }
+      },
+      "autoGenerate": true
     }
   ],
   "prompts": {
