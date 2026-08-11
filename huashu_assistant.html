@@ -218,8 +218,9 @@
         var btnRow = document.createElement("div");
         btnRow.className = "scene-switch";
         if(info.checkboxMode){
-          // 勾选框模式：勾选=yes（是），不勾=no（否）
+          // 勾选框模式：勾选=yes（是），不勾=no（否）；勾选框文字用 yes 选项的 label
           if(!currentAnswers[q.id]){ currentAnswers[q.id] = "no"; }
+          var yesOpt = q.options.filter(function(o){ return o.id === "yes"; })[0];
           var lbl = document.createElement("label");
           lbl.className = "check-item";
           var cb = document.createElement("input");
@@ -229,9 +230,16 @@
             updatePromptLabel();
           };
           lbl.appendChild(cb);
-          lbl.appendChild(document.createTextNode(" 是"));
+          lbl.appendChild(document.createTextNode(" " + (yesOpt ? yesOpt.label : "是")));
           btnRow.appendChild(lbl);
-          wrap.appendChild(btnRow);
+          col.appendChild(btnRow);
+          if(q.desc){
+            var d = document.createElement("div");
+            d.className = "opt-desc";
+            d.textContent = q.desc;
+            col.appendChild(d);
+          }
+          wrap.appendChild(col);
         } else {
           q.options.forEach(function(opt){
             var item = document.createElement("div");
