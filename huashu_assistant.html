@@ -12,6 +12,9 @@
   .card { background:#fff; border-radius:12px; padding:16px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
   .card h2 { font-size:14px; color:#374151; margin-bottom:10px; }
   label { font-size:12px; color:#6b7280; display:block; margin-bottom:4px; }
+  .opt-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .opt-desc { font-size:11px; color:#94a3b8; text-align:center; line-height:1.35; max-width:130px; }
+  .opt-item.active + .opt-desc, .opt-wrap:has(.opt-item.active) .opt-desc { color:#0ea5e9; }
   .bal-info { font-size:12px; color:#0ea5e9; cursor:pointer; margin-left:4px; font-weight:600; }
   .bal-info.err { color:#ef4444; }
   .usage-link { color:#2563eb; text-decoration:none; font-size:12px; font-weight:600; margin-left:6px; padding:1px 6px; border:1px solid #bfdbfe; border-radius:6px; background:#eff6ff; }
@@ -231,6 +234,8 @@
           wrap.appendChild(btnRow);
         } else {
           q.options.forEach(function(opt){
+            var item = document.createElement("div");
+            item.className = "opt-wrap";
             var btn = document.createElement("button");
             btn.type = "button";
             btn.className = "opt-item";
@@ -247,7 +252,14 @@
                 setTimeout(function(){ send(); }, 80);
               }
             };
-            btnRow.appendChild(btn);
+            item.appendChild(btn);
+            if(opt.desc){
+              var d = document.createElement("div");
+              d.className = "opt-desc";
+              d.textContent = opt.desc;
+              item.appendChild(d);
+            }
+            btnRow.appendChild(item);
           });
           col.appendChild(btnRow);
           wrap.appendChild(col);
