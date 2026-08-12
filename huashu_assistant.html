@@ -131,7 +131,7 @@
       </div>
       <button class="ghost" id="saveKey">保存</button>
       <button class="danger" id="clearKey" title="清除已保存的Key">清除</button>
-      <button class="ghost" id="exportBackup" title="导出本地设置备份到文件">导出备份</button>
+      <button class="ghost" id="exportBackup" title="导出话术记录（顾客原话+生成话术）">导出话术记录</button>
     </div>
   </details>
 
@@ -458,6 +458,7 @@
       outputEl.classList.remove("empty");
       chatHistory = [];
       lastSentText = full;
+      saveLog(full, tpl);
       status("✓ 预置转接话术·第" + transferCount + "档（未调用 AI）");
       return;
     }
@@ -548,6 +549,7 @@
       chatHistory.push({ role: "user", content: text });
       chatHistory.push({ role: "assistant", content: outputEl.textContent.trim() });
       lastSentText = inputEl.value;
+      saveLog(text, outputEl.textContent.trim());
       lastGeneratedText = outputEl.textContent.trim();
       copyBtn.disabled = !outputEl.textContent.trim();
       // 自动复制：生成完直接把话术复制到剪贴板
@@ -725,21 +727,38 @@
   copyBtn.onclick = copy;
   clearBtn.onclick = function(){ transferCount=0; suppressAuto=false; inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
   clearKeyBtn.onclick = function(){ localStorage.removeItem(KEY_STORE); apiKeyInput.value=""; status("已清除 Key"); };
+  // 场景标签（用于存档记录）
+  function currentSceneLabel(){
+    var s = sceneName(scene);
+    var label = s.name || scene;
+    var p = s.promptLabels && s.promptLabels[currentPromptId];
+    if(p) label += "·" + p;
+    return label;
+  }
+  // 自动存档：顾客原话 + 场景 + 生成话术（localStorage，上限500条）
+  function saveLog(input, output){
+    if(!output || !input.trim()) return;
+    try{
+      var logs = [];
+      try{ logs = JSON.parse(localStorage.getItem("huashu_logs") || "[]"); }catch(e){}
+      logs.push({ t: new Date().toLocaleString("zh-CN", {hour12:false}), scene: currentSceneLabel(), input: input, output: output });
+      if(logs.length > 500) logs = logs.slice(logs.length - 500);
+      localStorage.setItem("huashu_logs", JSON.stringify(logs));
+    }catch(e){}
+  }
   exportBtn.onclick = function(){
-    var data = {};
-    for(var i=0;i<localStorage.length;i++){
-      var k = localStorage.key(i);
-      if(k && k.indexOf("huashu_") === 0) data[k] = localStorage.getItem(k);
-    }
-    var blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    var logs = [];
+    try{ logs = JSON.parse(localStorage.getItem("huashu_logs") || "[]"); }catch(e){}
+    if(!logs.length){ status("还没有话术记录，先生成几条再导出吧"); return; }
+    var blob = new Blob([JSON.stringify(logs, null, 2)], {type:"application/json"});
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "huashu_backup_" + new Date().toISOString().slice(0,10) + ".json";
+    a.download = "huashu_logs_" + new Date().toISOString().slice(0,10) + ".json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
-    status("备份已导出：" + Object.keys(data).length + " 项（含Key/模型/场景/自动感应）");
+    status("已导出 " + logs.length + " 条话术记录（原话+场景+话术）");
   };
   inputEl.addEventListener("keydown", function(e){
     if((e.ctrlKey||e.metaKey) && e.key === "Enter"){ e.preventDefault(); send(); }
