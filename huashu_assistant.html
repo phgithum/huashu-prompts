@@ -111,6 +111,7 @@
       <li>在"设置"里填入你的 DeepSeek API Key（platform.deepseek.com → API Keys 里创建），点保存</li>
       <li>把顾客原话粘进输入框，点"生成话术"</li>
       <li>结果出来后点"复制话术"，粘回客服系统</li>
+      <li>🖱️ 按 <b>鼠标中键</b> 或 <b>F8</b> = 生成话术（生成完自动复制，回客服窗口 Ctrl+V 直接发）；侧键可用鼠标驱动映射成中键/F8</li>
       <li>Key 存在本机浏览器里，不上传任何服务器，直接连 DeepSeek 官方</li>
       <li>话术规则每次打开自动从云端拉取最新版；连不上时用内置规则，不影响使用</li>
     </ol>
@@ -765,6 +766,24 @@
   });
   loadSaved();
   loadCloudRules();
+
+  // 🖱️ 鼠标中键触发生成（生成完自动复制，回客服窗口直接 Ctrl+V 发送）
+  document.addEventListener("auxclick", function(e){
+    if(e.button !== 1) return;
+    var t = e.target;
+    if(t && (t.tagName === "BUTTON" || t.tagName === "A" || t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.tagName === "LABEL")) return;
+    e.preventDefault();
+    if(sendBtn.disabled) return;
+    send();
+  });
+  // ⌨️ F8 触发生成（侧键可经鼠标驱动映射为 F8 或中键）
+  document.addEventListener("keydown", function(e){
+    if(e.key === "F8"){
+      e.preventDefault();
+      if(sendBtn.disabled) return;
+      send();
+    }
+  });
 })();
 </script>
 </body>
