@@ -131,6 +131,7 @@
       </div>
       <button class="ghost" id="saveKey">保存</button>
       <button class="danger" id="clearKey" title="清除已保存的Key">清除</button>
+      <button class="ghost" id="exportBackup" title="导出本地设置备份到文件">导出备份</button>
     </div>
   </details>
 
@@ -145,7 +146,7 @@
       suppressAuto = false,
       checkboxEls = {},
       outputEl = $("output"), statusEl = $("status"), sendBtn = $("send"),
-      copyBtn = $("copy"), saveBtn = $("saveKey"), clearBtn = $("clear"), clearKeyBtn = $("clearKey"),
+      copyBtn = $("copy"), saveBtn = $("saveKey"), clearBtn = $("clear"), clearKeyBtn = $("clearKey"), exportBtn = $("exportBackup"),
       sceneSwitch = $("sceneSwitch"), ruleInfo = $("ruleInfo"),
       sceneLabel = $("sceneLabel"), sceneTag = $("sceneTag");
       autoBtn = $("autoBtn"), autoStatus = $("autoStatus");
@@ -724,6 +725,22 @@
   copyBtn.onclick = copy;
   clearBtn.onclick = function(){ transferCount=0; suppressAuto=false; inputEl.value=""; chatHistory=[]; lastSentText=""; inputEl.focus(); status("已清空，新对话"); };
   clearKeyBtn.onclick = function(){ localStorage.removeItem(KEY_STORE); apiKeyInput.value=""; status("已清除 Key"); };
+  exportBtn.onclick = function(){
+    var data = {};
+    for(var i=0;i<localStorage.length;i++){
+      var k = localStorage.key(i);
+      if(k && k.indexOf("huashu_") === 0) data[k] = localStorage.getItem(k);
+    }
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "huashu_backup_" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    status("备份已导出：" + Object.keys(data).length + " 项（含Key/模型/场景/自动感应）");
+  };
   inputEl.addEventListener("keydown", function(e){
     if((e.ctrlKey||e.metaKey) && e.key === "Enter"){ e.preventDefault(); send(); }
   });
