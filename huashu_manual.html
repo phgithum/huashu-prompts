@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客服话术小助手 · 使用手册</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f5f7fa; color:#333; line-height:1.7; padding-bottom:60px; }
+  .wrap { max-width:760px; margin:0 auto; padding:0 16px; }
+  header { background:linear-gradient(135deg,#1677ff,#69b1ff); color:#fff; padding:32px 16px 26px; text-align:center; }
+  header h1 { font-size:24px; margin-bottom:6px; }
+  header p { font-size:14px; opacity:.9; }
+  .tag { display:inline-block; background:rgba(255,255,255,.25); border-radius:20px; padding:2px 12px; font-size:12px; margin-top:8px; }
+  h2 { font-size:19px; margin:30px 0 12px; padding-left:10px; border-left:4px solid #1677ff; }
+  h3 { font-size:15px; margin:18px 0 8px; color:#1677ff; }
+  .card { background:#fff; border-radius:12px; padding:16px 18px; margin-bottom:14px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .card p, .card li { font-size:14px; }
+  ul, ol { padding-left:20px; }
+  li { margin:5px 0; }
+  .step { display:flex; align-items:flex-start; margin:10px 0; }
+  .step-num { flex-shrink:0; width:24px; height:24px; background:#1677ff; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:bold; margin-right:10px; margin-top:2px; }
+  .btn { display:inline-block; background:#1677ff; color:#fff; border-radius:6px; padding:1px 8px; font-size:13px; }
+  .btn-green { background:#52c41a; }
+  .btn-gray { background:#8c8c8c; }
+  .btn-purple { background:#722ed1; }
+  .btn-orange { background:#fa8c16; }
+  .kbd { background:#f0f0f0; border:1px solid #d9d9d9; border-radius:4px; padding:0 6px; font-size:13px; font-family:monospace; }
+  .warn { background:#fff7e6; border-left:4px solid #fa8c16; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:13px; }
+  .danger { background:#fff1f0; border-left:4px solid #ff4d4f; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:13px; }
+  .ok { background:#f6ffed; border-left:4px solid #52c41a; padding:10px 14px; border-radius:0 8px 8px 0; margin:10px 0; font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0; }
+  th, td { border:1px solid #e8e8e8; padding:7px 9px; text-align:left; }
+  th { background:#fafafa; }
+  code { background:#f0f0f0; border-radius:4px; padding:1px 5px; font-size:13px; font-family:monospace; }
+  .footer { text-align:center; color:#999; font-size:12px; margin-top:40px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🦞 客服话术小助手 · 使用手册</h1>
+  <p>网页版（GitHub Pages）完整使用说明</p>
+  <span class="tag">v2.2 手册 · 2026-08-13</span>
+</header>
+
+<div class="wrap">
+
+  <h2>🚀 快速开始（3 步）</h2>
+  <div class="card">
+    <div class="step"><div class="step-num">1</div><div><b>填 API Key</b>：往下滚到「设置」区，填入 DeepSeek API Key（没有的话看下文「申请 API」），点<span class="btn">保存</span>。想用免费兜底就再填智谱 Key。</div></div>
+    <div class="step"><div class="step-num">2</div><div><b>选场景</b>：点顶部场景按钮（被骗 / 赌博 / 限制），再选子选项（举报前 / 举报后 / 成立不退…）。</div></div>
+    <div class="step"><div class="step-num">3</div><div><b>生成话术</b>：把顾客原话粘进输入框，点<span class="btn">生成话术</span>（或按 <span class="kbd">F8</span> / 鼠标中键），生成完自动复制，回客服窗口 <span class="kbd">Ctrl+V</span> 发出。</div></div>
+  </div>
+
+  <h2>🎯 场景怎么选</h2>
+  <div class="card">
+    <table>
+      <tr><th>场景</th><th>子选项</th><th>什么时候用</th></tr>
+      <tr><td><b>被骗</b></td><td>📝 举报前</td><td>顾客刚说被骗，还没在支付宝举报</td></tr>
+      <tr><td></td><td>⏳ 举报后</td><td>顾客已提交举报，在等结果</td></tr>
+      <tr><td></td><td>❌ 没通过</td><td>举报审核没通过（很遗憾这次没通过）</td></tr>
+      <tr><td></td><td>⚖️ 成立不退</td><td>举报成立但对方一直不退款（最急的场景）</td></tr>
+      <tr><td><b>赌博</b></td><td>—（无子选项）</td><td>涉赌被限制的账户，只能安抚让顾客慢慢接受</td></tr>
+      <tr><td><b>限制</b></td><td>🔓 可解除</td><td>账户还能部分支出、有申诉入口</td></tr>
+      <tr><td></td><td>🔒 无法解除</td><td>申诉失败/无法申诉，完全不能用</td></tr>
+    </table>
+    <div class="warn">💡 拿不准选哪个：完全不能支付/提现 → 无法解除；还能部分支出或有申诉入口 → 可解除。</div>
+  </div>
+
+  <h2>☑️ 勾选项</h2>
+  <div class="card">
+    <ul>
+      <li><b>已举报 / 举报成立</b>：勾上后 AI 不会再问举报细节，直接进入安抚+讲结果+给路径。</li>
+      <li><b>😤 顾客情绪激动</b>（可叠加）：勾上后生成的话术会先稳住情绪、不展开细节，先接住再办事。</li>
+    </ul>
+  </div>
+
+  <h2>⚡ 生成话术的 4 种方式</h2>
+  <div class="card">
+    <table>
+      <tr><th>方式</th><th>操作</th><th>说明</th></tr>
+      <tr><td>点按钮</td><td>点<span class="btn">生成话术</span></td><td>最基础，生成完自动复制</td></tr>
+      <tr><td>键盘</td><td>按 <span class="kbd">F8</span></td><td>相当于点生成按钮</td></tr>
+      <tr><td>鼠标中键</td><td>按鼠标中键（滚轮按下）</td><td>侧键可映射成中键用</td></tr>
+      <tr><td>自动感应</td><td>开启<span class="btn">⚡自动感应</span></td><td>复制顾客消息（Ctrl+C）→ 切回本页 → 自动检测剪贴板 → 自动生成</td></tr>
+    </table>
+    <div class="ok">✅ 生成完自动复制到剪贴板，直接 Ctrl+V 就能发。发送永远人工，不自动发。</div>
+  </div>
+
+  <h2>🔑 申请 API（两个平台）</h2>
+
+  <h3>1️⃣ DeepSeek（主力，质量最稳）</h3>
+  <div class="card">
+    <ol>
+      <li>打开 <b>platform.deepseek.com</b>，手机号注册登录</li>
+      <li>左侧菜单「API Keys」→ 点「创建 API Key」→ 复制生成的 Key（格式 <code>sk-...</code>）</li>
+      <li>左侧「充值」：充 10 块钱能用很久（生成一次话术约 1 分钱不到）</li>
+      <li>把 Key 填进小助手设置区「API Key」，点<span class="btn">保存</span></li>
+    </ol>
+    <div class="warn">💡 余额可在设置区点「查用量 ↗」跳官网查看；页面「余额」处也会显示。</div>
+  </div>
+
+  <h3>2️⃣ 智谱 GLM（免费兜底）</h3>
+  <div class="card">
+    <ol>
+      <li>打开 <b>open.bigmodel.cn</b>，注册登录（需实名认证）</li>
+      <li>「API Keys」→ 创建 Key（格式 <code>xxxx.xxxx</code>）</li>
+      <li>选 <code>glm-4-flash</code> 模型 = <b>完全免费</b>，不花钱</li>
+      <li>填进设置区「智谱 API Key」，保存</li>
+    </ol>
+    <div class="ok">✅ 提供方选「自动」= 主力 DeepSeek 挂了/超时，自动切免费智谱兜底，不耽误干活。</div>
+  </div>
+
+  <h2>⚙️ 设置区详解</h2>
+  <div class="card">
+    <table>
+      <tr><th>项目</th><th>说明</th></tr>
+      <tr><td><b>API 提供方</b></td><td>DeepSeek（主力）/ 自动（DS优先，挂了切免费GLM）/ 智谱GLM（免费）</td></tr>
+      <tr><td><b>模型</b></td><td>DS：v4-flash（快省推荐）/ v4-pro（更强稍慢）；智谱：glm-4-flash（免费稳定）/ glm-4.7-flash（免费易限流）</td></tr>
+      <tr><td><b>余额</b></td><td>DeepSeek 余额显示 + 「查用量 ↗」跳官网</td></tr>
+      <tr><td><b>规则来源</b></td><td>显示当前用的是「内置规则」还是「云端规则」（云端会自动更新，不用管）</td></tr>
+      <tr><td><b>导出话术记录</b></td><td>一键把「顾客原话+生成话术+场景+时间」导出成 JSON 文件，攒真实数据用</td></tr>
+      <tr><td><b>清除</b></td><td>清掉本机保存的 API Key</td></tr>
+    </table>
+  </div>
+
+  <h2>💬 其他小功能</h2>
+  <div class="card">
+    <ul>
+      <li><b>💕 人文关怀</b>：点一下，自动按当前时间段生成一句生活关怀语（深夜提醒早睡、饭点提醒吃饭…），追加到话术末尾，让回复更像真人。</li>
+      <li><b>转接关键词</b>：输入框输入「转接 / 转交」→ 直接生成转接话术（预置模板，不调 API、不花钱）。</li>
+      <li><b>清空</b>：清空输入框和话术区。</li>
+    </ul>
+  </div>
+
+  <h2>📱 网页版 vs 本地版</h2>
+  <div class="card">
+    <table>
+      <tr><th></th><th>网页版（本页）</th><th>本地版（电脑脚本）</th></tr>
+      <tr><td>地址/文件</td><td>网页直接打开</td><td>huashu_assistant_gui.py 双击运行</td></tr>
+      <tr><td>自动感应</td><td>✅ 支持（需 HTTPS）</td><td>❌ 不支持</td></tr>
+      <tr><td>截图OCR</td><td>❌ 不支持</td><td>✅ 支持（F8 截工作台）</td></tr>
+      <tr><td>API Key 存放</td><td>浏览器本地</td><td>电脑本地</td></tr>
+    </table>
+    <div class="warn">⚠️ 网页版和本地版的 Key 是分开存的，网页版首次用要重新填一次。</div>
+  </div>
+
+  <h2>❓ 常见问题</h2>
+  <div class="card">
+    <ul>
+      <li><b>API 选项/模型/余额按钮不见了？</b> → 页面被缓存成旧版了，强制刷新（手机清缓存 / 电脑 Ctrl+F5）。</li>
+      <li><b>自动感应没反应？</b> → 自动感应只在网页版（HTTPS）可用，且浏览器要允许剪贴板权限；太短的文字、跟上次相同的文字不会触发。</li>
+      <li><b>Key 会泄露吗？</b> → Key 只存在你自己浏览器里，源码里没有，别人访问不到。</li>
+      <li><b>生成的话术偏软/偏硬？</b> → 场景子选项要选对（成立不退、情绪激动这些会改变话术方向）；还不对就反馈调整规则。</li>
+      <li><b>会替我把消息发出去吗？</b> → <b>永远不会</b>。生成完只复制到剪贴板，发送必须人工点。这是红线。</li>
+    </ul>
+  </div>
+
+  <div class="footer">客服话术小助手 · 使用手册 · 2026-08-13</div>
+</div>
+</body>
+</html>
