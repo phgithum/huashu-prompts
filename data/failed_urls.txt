@@ -1,0 +1,36 @@
+https://www.muji.com.cn/cn/store/commodity/94039	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/94030	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/95929	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/95948	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/95948	接口业务错误: 系统异常,请稍后再试! (code=-1)
+https://www.muji.com.cn/cn/store/commodity/95929	接口业务错误: 系统异常,请稍后再试! (code=-1)
+https://www.muji.com.cn/cn/store/commodity/94039	接口业务错误: 系统异常,请稍后再试! (code=-1)
+https://www.muji.com.cn/cn/store/commodity/94030	接口业务错误: 系统异常,请稍后再试! (code=-1)
+https://www.muji.com.cn/cn/store/commodity/94039	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/94030	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/95929	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
+https://www.muji.com.cn/cn/store/commodity/95948	Page.wait_for_selector: Timeout 15000ms exceeded.
+Call log:
+  - waiting for locator("h1") to be visible
+
