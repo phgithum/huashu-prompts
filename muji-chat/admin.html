@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MUJI 助手 · 设备管理后台</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Microsoft YaHei", sans-serif; background: #f4f2ee; color: #333; }
+header { background: #222; color: #fff; padding: 12px 18px; font-size: 15px; font-weight: 600; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+.card { background: #fff; border: 1px solid #e7e1d6; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.card h3 { font-size: 14px; margin-bottom: 10px; color: #7a0000; }
+input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid #d8d2c6; border-radius: 8px; font-size: 13px; margin-bottom: 8px; outline: none; box-sizing: border-box; }
+input:focus, select:focus { border-color: #7a0000; }
+button.main { background: #7a0000; color: #fff; border: none; border-radius: 8px; padding: 9px 22px; font-size: 13px; cursor: pointer; }
+button.ghost { background: #fff; color: #7a0000; border: 1px solid #7a0000; border-radius: 8px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+button.mini { background: #fff; color: #7a0000; border: 1px solid #ccc; border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 6px; font-size: 13px; }
+.item code { flex: 1; font-size: 12px; word-break: break-all; }
+.note { color: #888; font-size: 12px; line-height: 1.6; }
+#msg { font-size: 13px; margin-left: 10px; }
+#msg.ok { color: #2a7a2a; } #msg.err { color: #b00; }
+</style>
+</head>
+<body>
+<header>MUJI 助手 · 设备管理后台（仅管理员用）</header>
+<div class="wrap">
+
+<div class="card">
+  <h3>① 登录（GitHub Token）</h3>
+  <div class="row">
+    <input id="token" type="password" placeholder="粘贴你的 GitHub Personal Access Token（只存在本机浏览器，不会上传）">
+    <button class="main" style="flex:0 0 auto" onclick="loadAcl()">连接</button>
+  </div>
+  <div class="note">Token 需要 repo 权限。token 只保存在你自己浏览器的 localStorage 里，用于直接调 GitHub 接口修改 acl.json，不经过任何第三方。</div>
+</div>
+
+<div id="panel" style="display:none">
+  <div class="card">
+    <h3>② 管控模式</h3>
+    <div class="row">
+      <select id="mode">
+        <option value="blacklist">黑名单模式：默认所有人可用，名单内设备被屏蔽</option>
+        <option value="whitelist">白名单模式：只有名单内设备可用（推荐）</option>
+      </select>
+      <button class="main" style="flex:0 0 auto" onclick="saveAcl()">保存并生效</button>
+    </div>
+    <span id="msg"></span>
+  </div>
+
+  <div class="card">
+    <h3>③ 已授权设备（白名单模式生效 / 黑名单模式下仅登记）</h3>
+    <div id="devList"></div>
+    <div class="row" style="margin-top:8px">
+      <input id="devId" placeholder="设备编号，如 D1A2B3-XY9Z">
+      <input id="devNote" placeholder="备注（如：张三的手机）" style="flex:0 0 40%">
+      <button class="ghost" style="flex:0 0 auto" onclick="addDev()">添加</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>④ 已屏蔽设备</h3>
+    <div id="banList"></div>
+    <div class="row" style="margin-top:8px">
+      <input id="banId" placeholder="要拉黑的设备编号">
+      <input id="banNote" placeholder="备注" style="flex:0 0 40%">
+      <button class="ghost" style="flex:0 0 auto" onclick="addBan()">拉黑</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>使用说明</h3>
+    <div class="note">
+      1. 用户打开对话页时，页面顶部会显示他的「设备编号」，让用户复制发给你；<br>
+      2. 你在上面添加/拉黑后点「保存并生效」，用户刷新页面立即生效；<br>
+      3. 白名单模式下，不在名单里的设备全部显示「此设备已被禁用」；<br>
+      4. 名单保存在仓库 muji-chat/acl.json，改动会留有 git 记录。
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+const REPO = 'phgithum/huashu-prompts';
+const PATH = 'muji-chat/acl.json';
+let acl = {mode: 'whitelist', devices: [], banned: []};
+let token = '';
+
+async function api(path, opt) {
+  const r = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + path,
+    {...opt, headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opt.headers||{})}});
+  return r;
+}
+async function loadAcl() {
+  token = document.getElementById('token').value.trim();
+  if (!token) return;
+  const r = await api(PATH, {});
+  if (r.status === 200) {
+    const j = await r.json();
+    acl = JSON.parse(atob(j.content));
+    document.getElementById('panel').style.display = '';
+    document.getElementById('mode').value = acl.mode || 'whitelist';
+    render();
+  } else if (r.status === 404) {
+    document.getElementById('panel').style.display = '';
+    render();
+    await saveAcl('创建名单');
+  } else {
+    alert('连接失败：' + r.status + ' ' + (await r.text()).slice(0, 120));
+  }
+}
+async function saveAcl(msg) {
+  acl.mode = document.getElementById('mode').value;
+  const r = await api(PATH, {});
+  const body = {message: msg || 'update acl', content: btoa(unescape(encodeURIComponent(JSON.stringify(acl, null, 2)))), branch: 'main'};
+  if (r.status === 200) body.sha = (await r.json()).sha;
+  const p = await api(PATH, {method: 'PUT', body: JSON.stringify(body)});
+  const m = document.getElementById('msg');
+  m.textContent = p.status === 200 || p.status === 201 ? '✅ 已保存，用户刷新页面即生效' : '❌ 保存失败：' + p.status;
+  m.className = (p.status === 200 || p.status === 201) ? 'ok' : 'err';
+}
+function render() {
+  const dl = document.getElementById('devList'), bl = document.getElementById('banList');
+  dl.innerHTML = (acl.devices||[]).map((d,i) => `<div class="item"><code>${d.id}</code> ${d.note||''} <button class="mini" style="margin-left:auto" onclick="delItem('devices',${i})">移除</button></div>`).join('') || '<div class="note">（空）</div>';
+  bl.innerHTML = (acl.banned||[]).map((d,i) => `<div class="item"><code>${d.id}</code> ${d.note||''} <button class="mini" style="margin-left:auto" onclick="delItem('banned',${i})">解除拉黑</button></div>`).join('') || '<div class="note">（空）</div>';
+}
+function delItem(key, i) {
+  acl[key].splice(i, 1);
+  render();
+  saveAcl();
+}
+function addDev() {
+  const id = document.getElementById('devId').value.trim(), note = document.getElementById('devNote').value.trim();
+  if (!id) return;
+  acl.devices = (acl.devices||[]).filter(x => x.id !== id);
+  acl.devices.push({id, note});
+  document.getElementById('devId').value = ''; document.getElementById('devNote').value = '';
+  render(); saveAcl();
+}
+function addBan() {
+  const id = document.getElementById('banId').value.trim(), note = document.getElementById('banNote').value.trim();
+  if (!id) return;
+  acl.banned = (acl.banned||[]).filter(x => x.id !== id);
+  acl.banned.push({id, note});
+  acl.devices = (acl.devices||[]).filter(x => x.id !== id);
+  document.getElementById('banId').value = ''; document.getElementById('banNote').value = '';
+  render(); saveAcl();
+}
+</script>
+</body>
+</html>
