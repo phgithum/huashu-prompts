@@ -58,6 +58,7 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
 <body>
 <header><h1>MUJI 商品助手 —— 搜索商品 / 生成话术 / 知识问答</h1></header>
 <div class="wrap">
+<div class="hint" style="margin-bottom:6px">本机设备编号：<b id="myid">…</b> <button onclick="navigator.clipboard.writeText(MY_ID);this.textContent='已复制'" style="border:1px solid #d8d2c6;background:#fff;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer">复制</button>（管理员后台用这个编号来授权/屏蔽本机）</div>
 
 <section id="searchSec">
   <h2 class="sec">🔍 商品搜索</h2>
@@ -83,6 +84,7 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
 
 </div>
 <script>
+byId('myid').textContent = MY_ID;
 const CFG = {
   zhipu: ['4d6de0f45c174dc2b76b2d6f16b87f73', '.m3k1BumFMhNRX5kC'].join(''),
   kb: '2096197757286182912',
@@ -92,6 +94,37 @@ const CFG = {
 const D = window.MUJI_DATA || {products: {}, sizes: {}};
 const byId = id => document.getElementById(id);
 let ctxProduct = null, history = [];
+
+/* ---------- 设备授权 ---------- */
+function deviceId() {
+  let id = localStorage.getItem('muji_device_id');
+  if (!id) {
+    id = 'D' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    localStorage.setItem('muji_device_id', id);
+  }
+  return id;
+}
+const MY_ID = deviceId();
+async function checkAcl() {
+  try {
+    const r = await fetch('acl.json?t=' + Date.now(), {cache: 'no-store'});
+    const acl = await r.json();
+    const banned = (acl.banned || []).map(x => x.id);
+    const allowed = (acl.devices || []).map(x => x.id);
+    if (banned.includes(MY_ID)) return 'blocked';
+    if ((acl.mode || 'blacklist') === 'whitelist' && !allowed.includes(MY_ID)) return 'blocked';
+    return 'ok';
+  } catch (e) { return 'ok'; }  // 名单拉不到时默认放行，避免误伤
+}
+function showBlock() {
+  document.querySelector('.wrap').innerHTML =
+    `<div style="background:#fff;border:1px solid #e7e1d6;border-radius:10px;padding:40px 20px;text-align:center;margin-top:40px">
+      <div style="font-size:40px">🚫</div>
+      <h2 style="color:#7a0000;font-size:17px;margin:10px 0">此设备已被禁用</h2>
+      <p style="color:#666;font-size:13px">你的设备编号：<b id="myid2">${MY_ID}</b><br>如认为是误判，请把上面的设备编号发给管理员。</p>
+    </div>`;
+}
+checkAcl().then(s => { if (s === 'blocked') showBlock(); });
 
 function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
 
