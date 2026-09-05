@@ -8,12 +8,10 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: "Microsoft YaHei", sans-serif; background: #f4f2ee; color: #333; }
-header { background: #7a0000; color: #fff; padding: 10px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-header h1 { font-size: 16px; font-weight: 600; }
-header .mode { display: flex; background: rgba(255,255,255,.15); border-radius: 16px; overflow: hidden; }
-header .mode button { border: none; background: transparent; color: #fff; padding: 6px 16px; cursor: pointer; font-size: 13px; }
-header .mode button.on { background: #fff; color: #7a0000; font-weight: 600; }
+header { background: #7a0000; color: #fff; padding: 12px 18px; }
+header h1 { font-size: 16px; font-weight: 600; max-width: 1100px; margin: 0 auto; }
 .wrap { max-width: 1100px; margin: 0 auto; padding: 14px; }
+h2.sec { font-size: 15px; color: #7a0000; margin: 6px 0 10px; }
 /* 搜索 */
 .searchbar { display: flex; gap: 8px; margin: 6px 0 12px; }
 .searchbar input { flex: 1; padding: 11px 15px; border: 1px solid #d8d2c6; border-radius: 10px; font-size: 14px; outline: none; }
@@ -36,8 +34,8 @@ header .mode button.on { background: #fff; color: #7a0000; font-weight: 600; }
 #scriptBox .txt { font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
 #scriptBox .close { float: right; cursor: pointer; color: #999; font-size: 12px; border: none; background: none; }
 /* 对话 */
-#chatSec { display: none; }
-#chat { display: flex; flex-direction: column; gap: 12px; min-height: 200px; max-height: 62vh; overflow-y: auto; margin-bottom: 12px; }
+#chatSec { margin-top: 26px; }
+#chat { display: flex; flex-direction: column; gap: 12px; min-height: 160px; max-height: 60vh; overflow-y: auto; margin-bottom: 12px; }
 .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; line-height: 1.7; font-size: 14px; white-space: pre-wrap; }
 .user { align-self: flex-end; background: #7a0000; color: #fff; border-bottom-right-radius: 3px; }
 .bot { align-self: flex-start; background: #fff; border: 1px solid #e3ddd3; border-bottom-left-radius: 3px; }
@@ -54,24 +52,19 @@ header .mode button.on { background: #fff; color: #7a0000; font-weight: 600; }
 .ctxchip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px dashed #7a0000; color: #7a0000; border-radius: 14px; padding: 3px 10px; font-size: 12px; margin-bottom: 8px; }
 .ctxchip button { border: none; background: none; color: #999; cursor: pointer; }
 label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.empty { color: #999; font-size: 13px; padding: 30px 0; text-align: center; }
 </style>
 </head>
 <body>
-<header>
-  <h1>MUJI 商品助手</h1>
-  <div class="mode">
-    <button id="mSearch" class="on" onclick="setMode('search')">🔍 商品搜索</button>
-    <button id="mChat" onclick="setMode('chat')">💬 知识问答 / 话术</button>
-  </div>
-</header>
+<header><h1>MUJI 商品助手 —— 搜索商品 / 生成话术 / 知识问答</h1></header>
 <div class="wrap">
 
-<!-- 搜索模式 -->
 <section id="searchSec">
+  <h2 class="sec">🔍 商品搜索</h2>
   <div class="searchbar">
     <input id="q" placeholder="输入商品名称或 13 位条码 SKU，如：压缩沙发 / 4550723162258 / 毛衣">
   </div>
-  <div class="hint">支持商品名片段、条码精确查询；点击卡片按钮生成销售话术，或带图带价进入问答。</div>
+  <div class="hint">支持商品名片段、条码精确查询；点击卡片上的「生成话术」直接出销售文案，「去问答」带着该商品到底部继续问答。</div>
   <div id="scriptBox">
     <button class="close" onclick="document.getElementById('scriptBox').style.display='none'">关闭 ✕</button>
     <h3 id="scriptTitle"></h3>
@@ -80,12 +73,12 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
   <div id="grid"></div>
 </section>
 
-<!-- 问答模式 -->
 <section id="chatSec">
+  <h2 class="sec">💬 知识问答</h2>
   <div id="ctxwrap"></div>
   <label class="kb"><input type="checkbox" id="useKb" checked> 回答前检索知识库（材质/洗涤/尺码指南）</label>
-  <div id="chat"></div>
-  <form id="f" class="chatbar"><input id="cq" autocomplete="off" placeholder="输入顾客的问题，或先在搜索页选商品再提问…"><button id="send">发送</button></form>
+  <div id="chat"><div class="empty">在这里输入问题，例如：这件商品多少钱 / 我 170cm 60kg 穿什么码 / 水洗加工是什么意思</div></div>
+  <form id="f" class="chatbar"><input id="cq" autocomplete="off" placeholder="输入顾客的问题，或先在上方搜索选商品再提问…"><button id="send">发送</button></form>
 </section>
 
 </div>
@@ -96,30 +89,23 @@ const CFG = {
   ark: 'ark-c38a6bd9' + '-3e93-4367-9e5a-a64edcd09058-eb0f0',
   model: 'doubao-seed-character-260628'
 };
-const D = window.MUJI_DATA;
+const D = window.MUJI_DATA || {products: {}, sizes: {}};
 const byId = id => document.getElementById(id);
 let ctxProduct = null, history = [];
 
-function setMode(m) {
-  byId('searchSec').style.display = m === 'search' ? '' : 'none';
-  byId('chatSec').style.display = m === 'chat' ? '' : 'none';
-  byId('mSearch').classList.toggle('on', m === 'search');
-  byId('mChat').classList.toggle('on', m === 'chat');
-}
+function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
 
 /* ---------- 搜索 ---------- */
-function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
 function search() {
   const raw = byId('q').value.trim().toLowerCase().replace(/\s+/g, '');
   const grid = byId('grid');
   if (!raw) { grid.innerHTML = ''; return; }
-  let hits = [];
+  const hits = [];
   for (const [sku, p] of Object.entries(D.products)) {
     const t = (p.t + sku).toLowerCase().replace(/\s+/g, '');
     if (t.includes(raw)) hits.push([sku, p]);
     if (hits.length >= 24) break;
   }
-  // 条码数字命中排前
   hits.sort((a, b) => (b[0].includes(raw) ? 1 : 0) - (a[0].includes(raw) ? 1 : 0));
   grid.innerHTML = hits.map(([sku, p]) => `
     <div class="card">
@@ -133,7 +119,7 @@ function search() {
           <button onclick="toChat('${sku}')">去问答</button>
         </div>
       </div>
-    </div>`).join('') || '<div style="color:#999;font-size:13px">没找到相关商品</div>';
+    </div>`).join('') || '<div class="empty">没找到相关商品，换个关键词试试</div>';
 }
 byId('q').addEventListener('input', search);
 
@@ -154,11 +140,13 @@ async function genScript(sku) {
   byId('scriptBox').style.display = 'block';
   byId('scriptTitle').textContent = '销售话术 —— ' + p.t;
   byId('scriptTxt').textContent = '生成中…';
-  byId('scriptBox').scrollIntoView({behavior: 'smooth'});
+  byId('scriptBox').scrollIntoView({behavior: 'smooth', block: 'nearest'});
   const sys = '你是无印良品的资深导购。请根据商品信息生成一段发给顾客的销售话术：1)开头一句抓住需求的推荐语；2)2-3个卖点（材质/工艺/功能，来自商品信息，不编造数字）；3)一句使用/搭配建议；4)结尾轻推下单。语气亲切不油腻，总共不超过150字，直接输出话术本身。'
     + '\n\n商品信息：\n标题：' + p.t + '\n价格：¥' + p.p + '\nSKU：' + sku + '\n分类：' + p.c + '\n材质说明：' + p.d + '\n' + sizeText(sku);
-  const out = await streamArk([{'role':'system','content':sys},{'role':'user','content':'请为这个商品生成话术'}], t => byId('scriptTxt').textContent = t);
-  if (!out) byId('scriptTxt').textContent = '生成失败，请重试';
+  try {
+    const out = await streamArk([{'role':'system','content':sys},{'role':'user','content':'请为这个商品生成话术'}], t => byId('scriptTxt').textContent = t);
+    if (!out) byId('scriptTxt').textContent = '生成失败，请重试';
+  } catch (err) { byId('scriptTxt').textContent = '出错：' + err.message; }
 }
 
 /* ---------- 问答 ---------- */
@@ -166,7 +154,7 @@ function toChat(sku) {
   const p = D.products[sku];
   ctxProduct = {sku, ...p};
   renderCtx();
-  setMode('chat');
+  byId('chatSec').scrollIntoView({behavior: 'smooth'});
   byId('cq').focus();
 }
 function renderCtx() {
@@ -217,14 +205,15 @@ byId('f').onsubmit = async e => {
   if (!q) return;
   byId('cq').value = '';
   const chat = byId('chat');
+  const empty = chat.querySelector('.empty');
+  if (empty) empty.remove();
   const add = (cls, txt) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = txt; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; };
   add('user', q);
   const bot = add('bot typing', '');
   byId('send').disabled = true;
   let answer = '';
   try {
-    // 组上下文：选中商品优先 + 知识库检索
-    let ctx = [], refsShown = false;
+    let ctx = [];
     if (ctxProduct) {
       ctx.push(`【选中商品】${ctxProduct.t}\n价格：¥${ctxProduct.p}\nSKU：${ctxProduct.sku}\n分类：${ctxProduct.c}\n材质说明：${ctxProduct.d}\n${sizeText(ctxProduct.sku)}`);
     }
@@ -235,7 +224,7 @@ byId('f').onsubmit = async e => {
         d.className = 'refs';
         d.innerHTML = `<summary>📚 命中知识库 ${hits.length} 条</summary><ul>` +
           hits.map(r => `<li><b>${esc(r.doc)}</b>（${Number(r.score).toFixed(2)}）${esc((r.text||'').slice(0,140))}…</li>`).join('') + '</ul>';
-        chat.appendChild(d); chat.scrollTop = chat.scrollHeight; refsShown = true;
+        chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
         ctx.push(...hits.map(h => `（来源:${h.doc}）${h.text}`));
       }
     }
@@ -249,7 +238,6 @@ byId('f').onsubmit = async e => {
     for (const h of history.slice(-6)) { msgs.push({'role':'user','content':h.q}); msgs.push({'role':'assistant','content':h.a}); }
     msgs.push({'role': 'user', 'content': q});
     answer = await streamArk(msgs, t => { bot.textContent = t; chat.scrollTop = chat.scrollHeight; });
-    if (refsShown) bot.insertAdjacentHTML('beforebegin', '');
     bot.textContent = answer || '（空回复，请重试）';
   } catch (err) {
     bot.textContent = '出错：' + err.message;
