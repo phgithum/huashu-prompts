@@ -416,6 +416,22 @@ async function handleImage(file) {
 }
 
 /* ================== 事件绑定 ================== */
+document.addEventListener('paste', e => {
+  const items = (e.clipboardData || {}).items || [];
+  for (const it of items) {
+    if (it.type && it.type.startsWith('image/')) {
+      e.preventDefault();
+      handleImage(it.getAsFile());
+      return;
+    }
+  }
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = [...(e.dataTransfer.files || [])].find(x => x.type.startsWith('image/'));
+  if (f) handleImage(f);
+});
 byId('q').addEventListener('input', search);
 recordVisit();
 checkAcl().then(s => { if (s === 'blocked') showBlock(); });
