@@ -169,7 +169,7 @@ function matchProducts(query) {
     const t = norm(p.t), c = norm(p.c);
     const field = t + c;
     // 标题整体出现在查询里（处理"压缩沙发多少钱"这类问法）→ 强命中
-    if (t.length >= 3 && qn.includes(t)) { scored.push({sku, p, w: 60}); continue; }
+    if (t.length >= 3 && q.includes(t)) { scored.push({sku, p, w: 60}); continue; }
     let all = words.length > 0, any = 0, startHit = false;
     for (const w of words) {
       if (t.startsWith(w)) { any++; startHit = true; }
