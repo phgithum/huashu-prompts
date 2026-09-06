@@ -197,6 +197,7 @@ function matchProducts(query) {
       continue;
     }
     const w0 = words[0] || '';
+    if (!w0) continue;  // 单字查询走下方专用逻辑，绝不能用空字符串匹配（空串包含于一切）
     if (field.includes(w0)) {
       scored.push({sku, p, w: 30 + (t.startsWith(w0) ? 8 : 0)});
     } else if (w0.length >= 6) {
@@ -206,6 +207,12 @@ function matchProducts(query) {
       if (cov >= 0.45 && hit >= 3) scored.push({sku, p, w: Math.round(cov * 25), fuzzy: cov < 0.6});
     } else if (fuzzyContains(field, w0)) {
       scored.push({sku, p, w: 3, fuzzy: true});
+    }
+  }
+  // 单字查询兜底：只做精确单字包含，不做任何模糊
+  if (scored.length === 0 && q.length === 1) {
+    for (const [sku, p] of Object.entries(D.products)) {
+      if ((norm(p.t) + norm(p.c)).includes(q)) scored.push({sku, p, w: 30});
     }
   }
   if (scored.length === 0 && !isNum) {
