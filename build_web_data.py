@@ -38,6 +38,6 @@ for sku, r in sizes.items():
         sz[sku] = v
 
 payload = 'window.MUJI_DATA=' + json.dumps({'products': prods, 'sizes': sz}, ensure_ascii=False, separators=(',', ':')) + ';'
-out = os.path.join(HERE, 'web_data.js')
+out = os.path.join(HERE, 'muji-chat', 'data.js')
 open(out, 'w', encoding='utf-8').write(payload)
 print('products:', len(prods), 'sizes:', len(sz), '| size:', round(os.path.getsize(out) / 1048576, 2), 'MB')
