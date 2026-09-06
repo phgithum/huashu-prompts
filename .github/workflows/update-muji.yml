@@ -1,0 +1,46 @@
+name: update-muji-data
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'   # 每周一 02:00 UTC（北京 10:00）
+  workflow_dispatch:        # 支持手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安装依赖
+        run: |
+          pip install requests beautifulsoup4 lxml fake_useragent playwright rapidocr-onnxruntime opencv-python-headless
+          python -m playwright install chromium --with-deps
+
+      - name: 抓取官网商品（含断点续抓，约1~2小时）
+        run: python muji_scraper.py "https://www.muji.com.cn/cn/store/commodities" --out-dir .
+
+      - name: 生成网页数据（含官网链接，直接写入 muji-chat/data.js）
+        run: python build_web_data.py
+
+      - name: 生成知识文档并同步智谱知识库
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: |
+          python build_kb_docs.py
+          python upload_kb.py
+        continue-on-error: true
+
+      - name: 提交并推送
+        run: |
+          git config user.name "muji-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add muji_products.json muji_products.csv muji-chat/data.js kb_docs failed_urls.txt progress.json || true
+          git diff --cached --quiet || (git commit -m "auto: weekly data update" && git push)
