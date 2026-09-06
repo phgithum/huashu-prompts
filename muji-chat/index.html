@@ -196,6 +196,18 @@ function matchProducts(query) {
       scored.push({sku, p, w: 3, fuzzy: true});
     }
   }
+  if (scored.length === 0 && !isNum) {
+    // 全零 → 宽松兜底（错别字容错，两字词也放开）
+    for (const [sku, p] of Object.entries(D.products)) {
+      const field = norm(p.t) + norm(p.c);
+      for (const w of words.length ? words : [q]) {
+        if (w.length >= 2 && (field.includes(w) || fuzzyContains(field, w, true))) {
+          scored.push({sku, p, w: 2, fuzzy: true});
+          break;
+        }
+      }
+    }
+  }
   scored.sort((a, b) => b.w - a.w || (a.p.p || 0) - (b.p.p || 0));
   return scored.slice(0, 24).map(x => ({sku: x.sku, p: x.p, fuzzy: !!x.fuzzy}));
 }
