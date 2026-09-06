@@ -40,6 +40,20 @@ h2.sec { font-size: 15px; color: #7a0000; margin: 14px 0 10px; }
 .kcard b { color: #7a0000; }
 .empty { color: #999; font-size: 13px; padding: 24px 0; text-align: center; }
 #pasteTip { position: fixed; top: 14px; right: 14px; background: #7a0000; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; display: none; z-index: 9; }
+/* 商品问答 */
+#askSec { display: none; background: #fff; border: 1px solid #e7e1d6; border-radius: 10px; padding: 14px; margin-top: 18px; }
+#askSec h2 { font-size: 14px; color: #7a0000; margin-bottom: 4px; }
+#askProd { font-size: 13px; color: #666; margin-bottom: 10px; line-height: 1.6; }
+#askProd b { color: #7a0000; }
+#askChat { display: flex; flex-direction: column; gap: 10px; max-height: 50vh; overflow-y: auto; margin-bottom: 10px; }
+#askChat .msg { max-width: 85%; padding: 9px 13px; border-radius: 10px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+#askChat .u { align-self: flex-end; background: #7a0000; color: #fff; }
+#askChat .a { align-self: flex-start; background: #f4f2ee; border: 1px solid #e3ddd3; }
+.askbar { display: flex; gap: 8px; }
+.askbar input { flex: 1; padding: 10px 14px; border: 1px solid #d8d2c6; border-radius: 8px; font-size: 13px; outline: none; }
+.askbar button { padding: 0 20px; background: #7a0000; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+#askChat .typing::after { content: "▍"; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 </style>
 </head>
 <body>
@@ -71,6 +85,13 @@ h2.sec { font-size: 15px; color: #7a0000; margin: 14px 0 10px; }
 
   <h2 class="sec" id="kSec" style="display:none">📚 相关知识（话术/注意事项/尺码/对比）</h2>
   <div id="kres"></div>
+
+  <section id="askSec">
+    <h2>💬 商品专属问答</h2>
+    <div id="askProd"></div>
+    <div id="askChat"></div>
+    <form id="askForm" class="askbar"><input id="askQ" autocomplete="off" placeholder="问这个商品：什么材质？多长多宽？我170cm/65kg穿什么码？"><button id="askBtn">发送</button></form>
+  </section>
 
 </div>
 <script>
@@ -251,6 +272,7 @@ function cardHtml(sku, p, fuzzy) {
         <div class="s">SKU ${sku}</div>
         <div class="ops">
           <button class="solid" onclick="genScript('${sku}')">生成话术</button>
+          <button onclick="openAsk('${sku}')">问答</button>
           <button onclick="copyText(D.products['${sku}'].t, this)">复制名字</button>
           <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
         </div>
@@ -443,6 +465,50 @@ document.addEventListener('drop', e => {
   if (f) handleImage(f);
 });
 byId('q').addEventListener('input', search);
+/* ================== 商品专属问答 ================== */
+let askProduct = null, askHistory = [];
+function openAsk(sku) {
+  askProduct = {sku, ...D.products[sku]};
+  askHistory = [];
+  byId('askProd').innerHTML = '<b>' + esc(askProduct.t) + '</b>　¥' + askProduct.p + '　SKU ' + askProduct.sku +
+    (askProduct.s ? '　款号 ' + askProduct.s : '') + '<br>' + esc(askProduct.d || '') + '<br>' + esc(sizeText(sku));
+  byId('askChat').innerHTML = '<div class="a">这个商品的任何问题都可以问：材质、尺寸、洗涤、尺码推荐…</div>';
+  byId('askSec').style.display = 'block';
+  byId('askSec').scrollIntoView({behavior: 'smooth', block: 'start'});
+  byId('askQ').focus();
+}
+byId('askForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = byId('askQ').value.trim();
+  if (!q || !askProduct) return;
+  byId('askQ').value = '';
+  const chat = byId('askChat');
+  const add = (cls, txt) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = txt; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; };
+  add('u', q);
+  const bot = add('a', '');
+  bot.classList.add('typing');
+  byId('askBtn').disabled = true;
+  let answer = '';
+  try {
+    const p = askProduct;
+    const kbHits = await retrieve(p.t + ' ' + q).catch(() => []);
+    const kbTxt = (kbHits || []).map(h => '（' + (h.doc || '') + '）' + (h.text || '').slice(0, 300)).join('\n');
+    const sys = '你是MUJI无印良品的客服，只回答关于【当前商品】的问题。\n'
+      + '【当前商品】\n标题：' + p.t + '\n价格：¥' + p.p + '\nSKU：' + p.sku + '\n分类：' + p.c + '\n材质与说明：' + (p.d || '无') + '\n' + sizeText(p.sku) + '\n'
+      + (kbTxt ? '\n【相关知识参考】\n' + kbTxt.slice(0, 1500) + '\n' : '')
+      + '\n回答规则：1)价格/SKU/材质必须照抄商品信息原文；2)顾客报身高体重问尺码时，用商品的号型映射和对照表推码并说明依据，没有则按通用尺码并注明仅供参考；3)长度宽度等具体数字只准来自参考资料，没有就说这个尺寸详情里没有标注；4)只答这个问题相关的，简洁3~5句。';
+    const msgs = [{'role': 'system', 'content': sys}];
+    for (const h of askHistory.slice(-6)) { msgs.push({'role': 'user', 'content': h.q}); msgs.push({'role': 'assistant', 'content': h.a}); }
+    msgs.push({'role': 'user', 'content': q});
+    answer = await visionCall([{'type': 'text', 'text': q}], sys);
+    bot.textContent = answer || '（空回复，请重试）';
+  } catch (err) {
+    bot.textContent = '出错：' + err.message;
+  }
+  bot.classList.remove('typing');
+  askHistory.push({q, a: answer});
+  byId('askBtn').disabled = false;
+});
 recordVisit();
 checkAcl().then(s => { if (s === 'blocked') showBlock(); });
 </script>
