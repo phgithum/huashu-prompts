@@ -173,6 +173,11 @@ function matchProducts(query) {
       else if (sku.startsWith(q)) scored.push({sku, p, w: 80});
       continue;
     }
+    // 款号查询（字母数字混合5-9位）：款号全等/前缀 > 标题包含
+    if (/^[a-z0-9]{5,9}$/.test(q) && /[a-z]/.test(q) && /[0-9]/.test(q) && p.s) {
+      if (p.s.toLowerCase() === q) { scored.push({sku, p, w: 100}); continue; }
+      if (p.s.toLowerCase().startsWith(q) || q.startsWith(p.s.toLowerCase())) { scored.push({sku, p, w: 85}); continue; }
+    }
     const t = norm(p.t), c = norm(p.c);
     const field = t + c;
     // 标题整体出现在查询里（处理"压缩沙发多少钱"这类问法）→ 强命中
@@ -225,12 +230,13 @@ function search() {
     <div class="card">
       <img src="${p.i || ''}" onerror="this.style.visibility='hidden'" loading="lazy">
       <div class="bd">
-        <div class="t">${esc(p.t)}${fuzzy ? ' <span style="color:#999;font-size:11px">(模糊匹配)</span>' : ''}</div>
+        <div class="t">${esc(p.t)}${fuzzy ? ' <span style="color:#999;font-size:11px">(模糊匹配)</span>' : ''}${p.s ? '<span style="color:#999;font-size:11px">｜款号 ' + p.s + '</span>' : ''}</div>
         <div class="p">¥${p.p}</div>
         <div class="s">SKU ${sku}</div>
         <div class="ops">
           <button class="solid" onclick="genScript('${sku}')">生成话术</button>
           <button onclick="toChat('${sku}')">去问答</button>
+          <button onclick="navigator.clipboard.writeText('${esc(p.t).replace(/'/g, "\\'")}').then(()=>this.textContent='已复制')">复制名字</button>
           <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
         </div>
       </div>
@@ -420,7 +426,7 @@ async function handleImage(file) {
   try {
     const dataUrl = await compressImage(file);
     const desc = await visionCall(dataUrl,
-      '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签，也可能是商品实物。仔细看图并只输出一个JSON：{"mode":"tag"或"item","barcode":"吊牌上455开头的13位条码,读不到则空","name":"吊牌上印刷的中文品名(如:文件夹(环扣式)),实物照则给出最可能的MUJI商品名","desc":"实物照则描述:品类、男女装或儿童、颜色、材质、版型","keywords":["实物照则给3-5个类目同义词,如推车/置物架/收纳车;吊牌照则空数组"]}。注意:条码数字必须逐位仔细读;关键词用MUJI官网常用类目词;除JSON外不要输出任何其他文字。');
+      '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签（上面印有款号如AE0ZIA5S、CN字样、455开头的条码），也可能是商品实物。仔细看图并只输出一个JSON：{"mode":"tag"或"item","barcode":"455开头的13位条码,读不到则空","code":"吊牌上的款号(字母+数字混合,如AE0ZIA5S,通常是全大写,紧挨CN字样),读不到则空","name":"吊牌上印刷的中文品名,实物照则给出最可能的MUJI商品名","desc":"实物照则描述:品类、男女装或儿童、颜色、材质、版型","keywords":["实物照则给3-5个类目同义词;吊牌照则空数组"]}。注意:条码和款号必须逐字符仔细读;除JSON外不要输出任何其他文字。');
     let info = {};
     try { info = JSON.parse(desc.replace(/```json|```/g, '').trim()); } catch (e) {}
     let candidates = [];
@@ -429,6 +435,19 @@ async function handleImage(file) {
       bot.textContent = '✅ 吊牌识别成功（条码 ' + info.barcode + '）';
     } else if (info.barcode && /^\d{13}$/.test(info.barcode)) {
       bot.textContent = '读到了条码 ' + info.barcode + '，但这个条码不在商品库里。';
+    }
+    // 款号匹配（吊牌上印的款号如 AE0ZIA5S）
+    if (!candidates.length && info.code) {
+      const c = norm(info.code);
+      const byCode = Object.entries(D.products).filter(([sku, p]) => p.s && (p.s.toLowerCase() === c || p.s.toLowerCase().startsWith(c) || c.startsWith(p.s.toLowerCase())));
+      if (byCode.length) {
+        candidates = byCode.map(([sku, p]) => ({sku, p}));
+        bot.textContent = '✅ 款号识别成功（' + info.code + '）';
+      }
+    }
+    if (!candidates.length && info.name) {
+      const byName = matchProducts(info.name);
+      if (byName.length) { candidates = byName.slice(0, 5); bot.textContent = '按品名匹配：' + info.name; }
     }
     if (!candidates.length) {
       const q = (info.name || '') + ' ' + (info.desc || '') + ' ' + (info.keywords || []).join(' ');
