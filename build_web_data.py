@@ -14,6 +14,35 @@ if os.path.exists(sz_path):
         except Exception:
             pass
 
+# 款号映射（来自赤兔知识标题"商品名——款号"）
+chitu = {}
+csz = None
+for base in [r'C:\Users\23395\Downloads', r'C:\Users\23395\Desktop']:
+    for f in os.listdir(base):
+        if f.startswith('chitu-knowledge') and f.endswith('.json'):
+            p = os.path.join(base, f)
+            if csz is None or os.path.getsize(p) > os.path.getsize(csz):
+                csz = p
+try:
+    cd = json.load(open(csz, encoding='utf-8'))
+    for det in cd.get('details', []):
+        m = re.search(r'——\s*([A-Z0-9]{5,9})\s*$', det.get('title') or '')
+        if m:
+            chitu.setdefault(re.sub(r'——.*$', '', det['title']).strip(), m.group(1))
+except Exception as e:
+    print('chitu款号跳过:', e)
+
+def _norm(t):
+    return re.sub(r'[\s/（）()·＋+×\-—·]+', '', (t or '').lower())
+
+sku_code = {}
+for title, code in chitu.items():
+    nt = _norm(title)
+    for p in products:
+        pt = _norm(p.get('title'))
+        if nt and (nt in pt or pt in nt):
+            sku_code[p['sku']] = code
+
 prods = {}
 for p in products:
     if not p.get('sku'):
@@ -26,6 +55,9 @@ for p in products:
         'i': (p.get('images') or [''])[0],
         'u': p.get('url') or '',
     }
+    if sku_code.get(p['sku']):
+        prods[p['sku']]['s'] = sku_code[p['sku']]
+print('款号映射:', len(sku_code))
 sz = {}
 for sku, r in sizes.items():
     if sku not in prods:
