@@ -84,7 +84,6 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
 
 </div>
 <script>
-byId('myid').textContent = MY_ID;
 const CFG = {
   zhipu: ['4d6de0f45c174dc2b76b2d6f16b87f73', '.m3k1BumFMhNRX5kC'].join(''),
   kb: '2096197757286182912',
@@ -164,7 +163,6 @@ function search() {
       </div>
     </div>`).join('') || '<div class="empty">没找到相关商品，换个关键词试试</div>';
 }
-byId('q').addEventListener('input', search);
 
 function sizeText(sku) {
   const s = D.sizes[sku];
@@ -289,6 +287,10 @@ byId('f').onsubmit = async e => {
   history.push({q, a: answer});
   byId('send').disabled = false;
 };
+
+// 初始化（放在最后，确保所有声明已完成）
+byId('myid').textContent = MY_ID;
+byId('q').addEventListener('input', search);
 </script>
 </body>
 </html>
