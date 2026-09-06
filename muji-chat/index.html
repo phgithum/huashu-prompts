@@ -139,10 +139,10 @@ function showBlock() {
 /* ================== 搜索 ================== */
 function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
 function norm(s){ return (s||'').toLowerCase().replace(/\s+/g, '').replace(/[Ａ-Ｚａ-ｚ０-９：－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
-// 允许 1 个字不同的包含匹配（处理错别字）
-function fuzzyContains(text, word) {
+// 允许 1 个字不同的包含匹配（处理错别字）；两字词只在宽松模式下启用
+function fuzzyContains(text, word, loose) {
   if (text.includes(word)) return true;
-  if (word.length < 3) return false;
+  if (word.length < (loose ? 2 : 3)) return false;
   for (let s = 0; s <= text.length - word.length; s++) {
     let diff = 0;
     for (let i = 0; i < word.length; i++) {
@@ -168,6 +168,8 @@ function matchProducts(query) {
     }
     const t = norm(p.t), c = norm(p.c);
     const field = t + c;
+    // 标题整体出现在查询里（处理"压缩沙发多少钱"这类问法）→ 强命中
+    if (t.length >= 3 && qn.includes(t)) { scored.push({sku, p, w: 60}); continue; }
     let all = words.length > 0, any = 0, startHit = false;
     for (const w of words) {
       if (t.startsWith(w)) { any++; startHit = true; }
@@ -181,11 +183,11 @@ function matchProducts(query) {
     scored.push({sku, p, w});
   }
   if (scored.length === 0 && !isNum && words.length > 0) {
-    // AND 零结果 → OR 降级
+    // AND 零结果 → OR 降级（宽松容错：两字词也允许错一个字）
     for (const [sku, p] of Object.entries(D.products)) {
       const field = norm(p.t) + norm(p.c);
       for (const w of words) {
-        if (field.includes(w) || fuzzyContains(field, w)) { scored.push({sku, p, w: 3}); break; }
+        if (field.includes(w) || fuzzyContains(field, w, true)) { scored.push({sku, p, w: 3}); break; }
       }
     }
   }
