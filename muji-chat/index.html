@@ -79,7 +79,7 @@ const CFG = {
   zhipu: ['4d6de0f45c174dc2b76b2d6f16b87f73', '.m3k1BumFMhNRX5kC'].join(''),
   kb: ['2096197757286182912', '2096563310295195648'],
   ark: 'ark-c38a6bd9' + '-3e93-4367-9e5a-a64edcd09058-eb0f0',
-  visionModel: 'doubao-seed-1-6-vision-250815'
+  visionModel: 'doubao-seed-character-260628'
 };
 const KVDB = 'https://kvdb.io/Ks73CVNzBmXEcgUhaBfkFd';
 const D = window.MUJI_DATA || {products: {}, sizes: {}};
@@ -410,23 +410,8 @@ async function handleImage(file) {
 
 /* ================== 事件绑定 ================== */
 byId('q').addEventListener('input', search);
-document.addEventListener('paste', e => {
-  const items = (e.clipboardData || {}).items || [];
-  for (const it of items) {
-    if (it.type && it.type.startsWith('image/')) {
-      e.preventDefault();
-      handleImage(it.getAsFile());
-      return;
-    }
-  }
-});
-document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => {
-  e.preventDefault();
-  const f = [...(e.dataTransfer.files || [])].find(x => x.type.startsWith('image/'));
-  if (f) handleImage(f);
-});
-
-/* ================== 初始化 ================== */
 recordVisit();
 checkAcl().then(s => { if (s === 'blocked') showBlock(); });
+</script>
+</body>
+</html>
