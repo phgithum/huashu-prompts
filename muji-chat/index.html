@@ -299,7 +299,7 @@ function search() {
   }
   const hits = matchProducts(query);
   byId('prodSec').style.display = '';
-  grid.innerHTML = hits.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)) || '';
+  grid.innerHTML = hits.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)).join('');
   if (!hits.length) grid.innerHTML = '<div class="empty">没找到相关商品，换个关键词试试</div>';
   // 知识命中（无状态，独立查询）：命中商品时改用商品名查询，条码/短词才不会吃掉知识
   kres.innerHTML = '<div class="empty">知识库检索中…</div>';
@@ -379,7 +379,7 @@ function compressImage(file) {
 }
 function showImgResults(candidates, msg) {
   byId('imgSec').style.display = '';
-  byId('imgGrid').innerHTML = candidates.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)) || '';
+  byId('imgGrid').innerHTML = candidates.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)).join('');
   const m = byId('imgMsg');
   m.style.display = msg ? '' : 'none';
   m.textContent = msg || '';
