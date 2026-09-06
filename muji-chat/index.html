@@ -378,7 +378,108 @@ byId('f').onsubmit = async e => {
   byId('send').disabled = false;
 };
 
+/* ================== 图片识款 ================== */
+async function visionCall(b64dataUrl, prompt) {
+  const content = [{'type': 'image_url', 'image_url': {'url': b64dataUrl}}, {'type': 'text', 'text': prompt}];
+  const tryReq = (url, key, model) => fetch(url, {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'},
+    body: JSON.stringify({model, messages: [{'role': 'user', 'content': content}], max_tokens: 500, temperature: 0.1})
+  });
+  let r;
+  try {
+    r = await tryReq('https://open.bigmodel.cn/api/paas/v4/chat/completions', CFG.zhipu, 'glm-4v-flash');
+    if (!r.ok) throw new Error('glm ' + r.status);
+  } catch (e) {
+    r = await tryReq('https://ark.cn-beijing.volces.com/api/v3/chat/completions', CFG.ark, 'doubao-seed-1-6-vision-250815');
+  }
+  const j = await r.json();
+  return (((j.choices || [{}])[0].message || {}).content || '').trim();
+}
+function compressImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 900 / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * scale);
+      cv.height = Math.round(img.height * scale);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      resolve(cv.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+async function handleImage(file) {
+  const chat = byId('chat');
+  const empty = chat.querySelector('.empty');
+  if (empty) empty.remove();
+  const add = (cls, txt) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = txt; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; };
+  const status = add('user', '📷 [发送了一张图片，识别中…]');
+  const bot = add('bot typing', '看图识别中…');
+  try {
+    const dataUrl = await compressImage(file);
+    const desc = await visionCall(dataUrl,
+      '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签，也可能是商品实物。仔细看图并只输出一个JSON，格式：{"mode":"tag","barcode":"吊牌上455开头的13位条码数字,读不到则空字符串","name":"吊牌上印刷的中文品名(如:文件夹(环扣式)),实物照则空","desc":"实物照则描述:品类、男女装或儿童、颜色、材质、版型细节;吊牌照则空"}。注意:条码数字必须逐位仔细读,不要遗漏或臆造;除JSON外不要输出任何其他文字。');
+    let info = {};
+    try { info = JSON.parse(desc.replace(/```json|```/g, '').trim()); } catch (e) {}
+    let candidates = [];
+    if (info.barcode && /^\d{13}$/.test(info.barcode) && D.products[info.barcode]) {
+      candidates = [{sku: info.barcode, p: D.products[info.barcode]}];
+      bot.textContent = '✅ 吊牌识别成功（条码 ' + info.barcode + '）';
+    } else if (info.barcode && /^\d{13}$/.test(info.barcode)) {
+      bot.textContent = '读到了条码 ' + info.barcode + '，但这个条码不在商品库里。';
+    }
+    if (!candidates.length) {
+      const q = (info.name || '') + ' ' + (info.desc || '');
+      candidates = matchProducts(q || (info.name || '')).slice(0, 5);
+      bot.textContent = info.name ? ('识别到：' + info.name + (info.desc ? '｜' + info.desc : '')) : (info.desc || '没能识别出商品，请换张清晰的照片。');
+    }
+    if (candidates.length) {
+      const d = document.createElement('div');
+      d.className = 'refs';
+      d.style.width = '95%';
+      d.innerHTML = '<b>疑似款（点击选用）：</b><div id="grid" style="margin-top:8px">' +
+        candidates.map(({sku, p, fuzzy}) => `
+        <div class="card">
+          <img src="${p.i || ''}" onerror="this.style.visibility='hidden'" loading="lazy">
+          <div class="bd">
+            <div class="t">${esc(p.t)}${fuzzy ? ' <span style="color:#999;font-size:11px">(模糊匹配)</span>' : ''}</div>
+            <div class="p">¥${p.p}</div>
+            <div class="s">SKU ${sku}</div>
+            <div class="ops">
+              <button class="solid" onclick="pickProduct('${sku}')">选这个</button>
+              <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
+            </div>
+          </div>
+        </div>`).join('') + '</div>';
+      chat.appendChild(d);
+    }
+  } catch (err) {
+    bot.textContent = '识别出错：' + err.message;
+  }
+  bot.classList.remove('typing');
+  status.textContent = '📷 [发送了一张图片]';
+  chat.scrollTop = chat.scrollHeight;
+}
+function pickProduct(sku) {
+  const p = D.products[sku];
+  ctxProduct = {sku, ...p};
+  renderCtx();
+  byId('chatSec').scrollIntoView({behavior: 'smooth'});
+}
+
 /* ================== 初始化 ================== */
+document.addEventListener('paste', e => {
+  const items = (e.clipboardData || {}).items || [];
+  for (const it of items) {
+    if (it.type && it.type.startsWith('image/')) {
+      e.preventDefault();
+      handleImage(it.getAsFile());
+      return;
+    }
+  }
+});
 byId('q').addEventListener('input', search);
 recordVisit();
 checkAcl().then(s => { if (s === 'blocked') showBlock(); });
