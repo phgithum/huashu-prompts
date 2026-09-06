@@ -138,26 +138,75 @@ function showBlock() {
 
 /* ================== 搜索 ================== */
 function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
+function norm(s){ return (s||'').toLowerCase().replace(/\s+/g, '').replace(/[Ａ-Ｚａ-ｚ０-９：－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
+// 允许 1 个字不同的包含匹配（处理错别字）
+function fuzzyContains(text, word) {
+  if (text.includes(word)) return true;
+  if (word.length < 3) return false;
+  for (let s = 0; s <= text.length - word.length; s++) {
+    let diff = 0;
+    for (let i = 0; i < word.length; i++) {
+      if (text[s + i] !== word[i] && ++diff > 1) break;
+    }
+    if (diff <= 1) return true;
+  }
+  return false;
+}
+// 匹配器：返回 {sku, p, score} 数组。SKU 必须一致，中文支持多关键词+容错
+function matchProducts(query) {
+  const q = norm(query);
+  if (!q) return [];
+  const isNum = /^\d+$/.test(q);
+  const words = query.trim().split(/[\s,，、/]+/).map(norm).filter(w => w.length >= 2);
+  const scored = [];
+  for (const [sku, p] of Object.entries(D.products)) {
+    if (isNum) {
+      // 纯数字只搜条码：13位全等 > 前缀
+      if (sku === q) scored.push({sku, p, w: 100});
+      else if (sku.startsWith(q)) scored.push({sku, p, w: 80});
+      continue;
+    }
+    const t = norm(p.t), c = norm(p.c);
+    const field = t + c;
+    let all = words.length > 0, any = 0, startHit = false;
+    for (const w of words) {
+      if (t.startsWith(w)) { any++; startHit = true; }
+      else if (field.includes(w)) any++;
+      else if (fuzzyContains(field, w)) any++;
+      else { all = false; }
+    }
+    if (!all) continue;
+    let w = 10 + any * 5 + (startHit ? 8 : 0);
+    if (!startHit && words.length === 1 && !field.includes(words[0])) w -= 4;  // 容错命中的降权
+    scored.push({sku, p, w});
+  }
+  if (scored.length === 0 && !isNum && words.length > 0) {
+    // AND 零结果 → OR 降级
+    for (const [sku, p] of Object.entries(D.products)) {
+      const field = norm(p.t) + norm(p.c);
+      for (const w of words) {
+        if (field.includes(w) || fuzzyContains(field, w)) { scored.push({sku, p, w: 3}); break; }
+      }
+    }
+  }
+  scored.sort((a, b) => b.w - a.w || (a.p.p || 0) - (b.p.p || 0));
+  return scored.slice(0, 24).map(x => ({sku: x.sku, p: x.p, fuzzy: !isNum && x.w <= 3}));
+}
+
 function search() {
-  const raw = byId('q').value.trim().toLowerCase().replace(/\s+/g, '');
+  const query = byId('q').value.trim();
   const grid = byId('grid');
-  if (!raw) { grid.innerHTML = ''; return; }
+  if (!query) { grid.innerHTML = ''; return; }
   if (!Object.keys(D.products).length) {
     grid.innerHTML = '<div class="empty">商品数据未加载成功，请刷新页面重试（Ctrl+F5）</div>';
     return;
   }
-  const hits = [];
-  for (const [sku, p] of Object.entries(D.products)) {
-    const t = (p.t + sku).toLowerCase().replace(/\s+/g, '');
-    if (t.includes(raw)) hits.push([sku, p]);
-    if (hits.length >= 24) break;
-  }
-  hits.sort((a, b) => (b[0].includes(raw) ? 1 : 0) - (a[0].includes(raw) ? 1 : 0));
-  grid.innerHTML = hits.map(([sku, p]) => `
+  const hits = matchProducts(query);
+  grid.innerHTML = hits.map(({sku, p, fuzzy}) => `
     <div class="card">
       <img src="${p.i || ''}" onerror="this.style.visibility='hidden'" loading="lazy">
       <div class="bd">
-        <div class="t">${esc(p.t)}</div>
+        <div class="t">${esc(p.t)}${fuzzy ? ' <span style="color:#999;font-size:11px">(模糊匹配)</span>' : ''}</div>
         <div class="p">¥${p.p}</div>
         <div class="s">SKU ${sku}</div>
         <div class="ops">
@@ -260,12 +309,17 @@ byId('f').onsubmit = async e => {
   let answer = '';
   try {
     let ctx = [];
-    // 自动切换选中商品：问题里精确命中另一个商品时，让位给新商品
-    const qn = q.toLowerCase().replace(/\s+/g, '');
+    // 自动切换选中商品：条码必须全等，商品名需问题包含完整标题
+    const qn = norm(q);
     let newHit = null;
-    for (const [sku, p] of Object.entries(D.products)) {
-      const t = p.t.toLowerCase().replace(/\s+/g, '');
-      if ((sku === q.replace(/\D/g, '') && q.replace(/\D/g, '').length === 13) || (t.length >= 3 && (t.includes(qn) || qn.includes(t)))) { newHit = {sku, ...p}; break; }
+    const digits = q.replace(/\D/g, '');
+    if (/^\d{13}$/.test(digits)) {
+      if (D.products[digits]) newHit = {sku: digits, ...D.products[digits]};
+    } else {
+      for (const [sku, p] of Object.entries(D.products)) {
+        const t = norm(p.t);
+        if (t.length >= 3 && (qn.includes(t) || t.includes(qn) && qn.length >= t.length - 2)) { newHit = {sku, ...p}; break; }
+      }
     }
     if (newHit && (!ctxProduct || newHit.sku !== ctxProduct.sku)) {
       ctxProduct = newHit;
