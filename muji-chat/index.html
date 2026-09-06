@@ -54,6 +54,10 @@ h2.sec { font-size: 15px; color: #7a0000; margin: 14px 0 10px; }
 .askbar button { padding: 0 20px; background: #7a0000; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
 #askChat .typing::after { content: "▍"; animation: blink 1s infinite; }
 @keyframes blink { 50% { opacity: 0; } }
+#askTable { width: 100%; border-collapse: collapse; margin: 10px 0 12px; font-size: 13px; }
+#askTable td { border: 1px solid #e3ddd3; padding: 7px 10px; vertical-align: top; }
+#askTable td:first-child { width: 92px; background: #f4f2ee; color: #7a0000; font-weight: 600; white-space: nowrap; }
+#askTable a { color: #7a0000; }
 </style>
 </head>
 <body>
@@ -470,9 +474,20 @@ let askProduct = null, askHistory = [];
 function openAsk(sku) {
   askProduct = {sku, ...D.products[sku]};
   askHistory = [];
-  byId('askProd').innerHTML = '<b>' + esc(askProduct.t) + '</b>　¥' + askProduct.p + '　SKU ' + askProduct.sku +
-    (askProduct.s ? '　款号 ' + askProduct.s : '') + '<br>' + esc(askProduct.d || '') + '<br>' + esc(sizeText(sku));
-  byId('askChat').innerHTML = '<div class="a">这个商品的任何问题都可以问：材质、尺寸、洗涤、尺码推荐…</div>';
+  const p = askProduct;
+  const st = sizeText(sku);
+  const stShort = st.length > 160 ? st.slice(0, 160) + '…' : st;
+  byId('askProd').innerHTML =
+    '<table id="askTable">' +
+    '<tr><td>商品名称</td><td>' + esc(p.t) + (p.s ? '　（款号 ' + esc(p.s) + '）' : '') + '</td></tr>' +
+    '<tr><td>价格</td><td><b style="color:#7a0000">¥' + p.p + '</b></td></tr>' +
+    '<tr><td>SKU 条码</td><td>' + p.sku + '</td></tr>' +
+    '<tr><td>分类</td><td>' + esc(p.c) + '</td></tr>' +
+    '<tr><td>材质与说明</td><td>' + esc(p.d || '（暂无）') + '</td></tr>' +
+    '<tr><td>尺码信息</td><td>' + esc(stShort || '（该商品无尺码数据）') + '</td></tr>' +
+    '<tr><td>官网页面</td><td><a href="' + (p.u || '#') + '" target="_blank">' + (p.u || '无') + '</a></td></tr>' +
+    '</table>';
+  byId('askChat').innerHTML = '<div class="a">这是「' + esc(p.t) + '」的专属问答：材质、尺寸、洗涤、尺码推荐…直接输入问题。</div>';
   byId('askSec').style.display = 'block';
   byId('askSec').scrollIntoView({behavior: 'smooth', block: 'start'});
   byId('askQ').focus();
