@@ -420,7 +420,7 @@ async function handleImage(file) {
   try {
     const dataUrl = await compressImage(file);
     const desc = await visionCall(dataUrl,
-      '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签，也可能是商品实物。仔细看图并只输出一个JSON，格式：{"mode":"tag","barcode":"吊牌上455开头的13位条码数字,读不到则空字符串","name":"吊牌上印刷的中文品名(如:文件夹(环扣式)),实物照则空","desc":"实物照则描述:品类、男女装或儿童、颜色、材质、版型细节;吊牌照则空"}。注意:条码数字必须逐位仔细读,不要遗漏或臆造;除JSON外不要输出任何其他文字。');
+      '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签，也可能是商品实物。仔细看图并只输出一个JSON：{"mode":"tag"或"item","barcode":"吊牌上455开头的13位条码,读不到则空","name":"吊牌上印刷的中文品名(如:文件夹(环扣式)),实物照则给出最可能的MUJI商品名","desc":"实物照则描述:品类、男女装或儿童、颜色、材质、版型","keywords":["实物照则给3-5个类目同义词,如推车/置物架/收纳车;吊牌照则空数组"]}。注意:条码数字必须逐位仔细读;关键词用MUJI官网常用类目词;除JSON外不要输出任何其他文字。');
     let info = {};
     try { info = JSON.parse(desc.replace(/```json|```/g, '').trim()); } catch (e) {}
     let candidates = [];
@@ -431,9 +431,9 @@ async function handleImage(file) {
       bot.textContent = '读到了条码 ' + info.barcode + '，但这个条码不在商品库里。';
     }
     if (!candidates.length) {
-      const q = (info.name || '') + ' ' + (info.desc || '');
+      const q = (info.name || '') + ' ' + (info.desc || '') + ' ' + (info.keywords || []).join(' ');
       // 描述式长文本：拆词后按命中词数排序（两字以上词都算）
-      const toks = q.split(/[｜，,。/、\s]+/).map(norm).filter(w => w.length >= 2);
+      const toks = [...new Set(q.split(/[｜，,。/、\s]+/).map(norm).filter(w => w.length >= 2))];
       if (toks.length) {
         const sc = [];
         for (const [sku, p] of Object.entries(D.products)) {
