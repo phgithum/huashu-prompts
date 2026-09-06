@@ -12,7 +12,6 @@ header { background: #7a0000; color: #fff; padding: 12px 18px; }
 header h1 { font-size: 16px; font-weight: 600; max-width: 1100px; margin: 0 auto; }
 .wrap { max-width: 1100px; margin: 0 auto; padding: 14px; }
 h2.sec { font-size: 15px; color: #7a0000; margin: 6px 0 10px; }
-/* 搜索 */
 .searchbar { display: flex; gap: 8px; margin: 6px 0 12px; }
 .searchbar input { flex: 1; padding: 11px 15px; border: 1px solid #d8d2c6; border-radius: 10px; font-size: 14px; outline: none; }
 .searchbar input:focus { border-color: #7a0000; }
@@ -28,12 +27,10 @@ h2.sec { font-size: 15px; color: #7a0000; margin: 6px 0 10px; }
 .card .ops button { flex: 1; border: 1px solid #7a0000; background: #fff; color: #7a0000; border-radius: 6px; padding: 5px 0; font-size: 12px; cursor: pointer; }
 .card .ops button.solid { background: #7a0000; color: #fff; }
 .card .ops button:hover { opacity: .85; }
-/* 话术输出 */
 #scriptBox { display: none; background: #fff; border: 1px solid #e7e1d6; border-radius: 10px; padding: 14px; margin: 12px 0; }
 #scriptBox h3 { font-size: 14px; color: #7a0000; margin-bottom: 8px; }
 #scriptBox .txt { font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
 #scriptBox .close { float: right; cursor: pointer; color: #999; font-size: 12px; border: none; background: none; }
-/* 对话 */
 #chatSec { margin-top: 26px; }
 #chat { display: flex; flex-direction: column; gap: 12px; min-height: 160px; max-height: 60vh; overflow-y: auto; margin-bottom: 12px; }
 .msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; line-height: 1.7; font-size: 14px; white-space: pre-wrap; }
@@ -58,7 +55,6 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
 <body>
 <header><h1>MUJI 商品助手 —— 搜索商品 / 生成话术 / 知识问答</h1></header>
 <div class="wrap">
-<div class="hint" style="margin-bottom:6px">本机设备编号：<b id="myid">…</b> <button onclick="navigator.clipboard.writeText(MY_ID);this.textContent='已复制'" style="border:1px solid #d8d2c6;background:#fff;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer">复制</button>（管理员后台用这个编号来授权/屏蔽本机）</div>
 
 <section id="searchSec">
   <h2 class="sec">🔍 商品搜索</h2>
@@ -84,56 +80,64 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
 
 </div>
 <script>
+/* ================== 基础 ================== */
 const CFG = {
   zhipu: ['4d6de0f45c174dc2b76b2d6f16b87f73', '.m3k1BumFMhNRX5kC'].join(''),
   kb: '2096197757286182912',
   ark: 'ark-c38a6bd9' + '-3e93-4367-9e5a-a64edcd09058-eb0f0',
   model: 'doubao-seed-character-260628'
 };
+const KVDB = 'https://kvdb.io/Ks73CVNzBmXEcgUhaBfkFd';
 const D = window.MUJI_DATA || {products: {}, sizes: {}};
 const byId = id => document.getElementById(id);
 let ctxProduct = null, history = [];
 
-/* ---------- 设备授权 ---------- */
-function deviceId() {
-  const gen = () => 'D' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
-  try {
-    let id = localStorage.getItem('muji_device_id');
-    if (!id) { id = gen(); localStorage.setItem('muji_device_id', id); }
-    return id;
-  } catch (e) { return gen(); }  // localStorage 不可用时用临时编号
-}
-const MY_ID = deviceId();
 window.onerror = function (msg, src, line) {
   const bar = document.createElement('div');
   bar.style.cssText = 'background:#b00;color:#fff;padding:6px 14px;font-size:12px';
   bar.textContent = '页面脚本出错：' + msg + ' @' + (src || '').split('/').pop() + ':' + line;
   document.body.insertBefore(bar, document.body.firstChild);
 };
+
+/* ================== 设备授权 ================== */
+function deviceId() {
+  const gen = () => 'D' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+  try {
+    let id = localStorage.getItem('muji_device_id');
+    if (!id) { id = gen(); localStorage.setItem('muji_device_id', id); }
+    return id;
+  } catch (e) { return gen(); }
+}
+const MY_ID = deviceId();
+
+async function recordVisit() {
+  try {
+    await fetch(KVDB + '/visits/' + MY_ID, {method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ts: new Date().toLocaleString('zh-CN'), ua: navigator.userAgent.slice(0, 90)})});
+  } catch (e) {}
+}
 async function checkAcl() {
   try {
-    const r = await fetch('acl.json?t=' + Date.now(), {cache: 'no-store'});
+    const r = await fetch(KVDB + '/acl?t=' + Date.now(), {cache: 'no-store'});
     const acl = await r.json();
     const banned = (acl.banned || []).map(x => x.id);
     const allowed = (acl.devices || []).map(x => x.id);
     if (banned.includes(MY_ID)) return 'blocked';
     if ((acl.mode || 'blacklist') === 'whitelist' && !allowed.includes(MY_ID)) return 'blocked';
     return 'ok';
-  } catch (e) { return 'ok'; }  // 名单拉不到时默认放行，避免误伤
+  } catch (e) { return 'ok'; }
 }
 function showBlock() {
   document.querySelector('.wrap').innerHTML =
     `<div style="background:#fff;border:1px solid #e7e1d6;border-radius:10px;padding:40px 20px;text-align:center;margin-top:40px">
       <div style="font-size:40px">🚫</div>
       <h2 style="color:#7a0000;font-size:17px;margin:10px 0">此设备已被禁用</h2>
-      <p style="color:#666;font-size:13px">你的设备编号：<b id="myid2">${MY_ID}</b><br>如认为是误判，请把上面的设备编号发给管理员。</p>
+      <p style="color:#666;font-size:13px">设备编号：<b>${MY_ID}</b><br>如认为是误判，请联系管理员。</p>
     </div>`;
 }
-checkAcl().then(s => { if (s === 'blocked') showBlock(); });
 
+/* ================== 搜索 ================== */
 function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
-
-/* ---------- 搜索 ---------- */
 function search() {
   const raw = byId('q').value.trim().toLowerCase().replace(/\s+/g, '');
   const grid = byId('grid');
@@ -175,7 +179,7 @@ function sizeText(sku) {
   return parts.length ? parts.join('；') : '尺码数据：详情未提供尺码表，按品类通用尺码回答并注明仅供参考。';
 }
 
-/* ---------- 话术生成 ---------- */
+/* ================== 话术生成 ================== */
 async function genScript(sku) {
   const p = D.products[sku];
   byId('scriptBox').style.display = 'block';
@@ -190,7 +194,7 @@ async function genScript(sku) {
   } catch (err) { byId('scriptTxt').textContent = '出错：' + err.message; }
 }
 
-/* ---------- 问答 ---------- */
+/* ================== 问答 ================== */
 function toChat(sku) {
   const p = D.products[sku];
   ctxProduct = {sku, ...p};
@@ -288,9 +292,10 @@ byId('f').onsubmit = async e => {
   byId('send').disabled = false;
 };
 
-// 初始化（放在最后，确保所有声明已完成）
-byId('myid').textContent = MY_ID;
+/* ================== 初始化 ================== */
 byId('q').addEventListener('input', search);
+recordVisit();
+checkAcl().then(s => { if (s === 'blocked') showBlock(); });
 </script>
 </body>
 </html>
