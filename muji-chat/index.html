@@ -259,6 +259,17 @@ byId('f').onsubmit = async e => {
   let answer = '';
   try {
     let ctx = [];
+    // 自动切换选中商品：问题里精确命中另一个商品时，让位给新商品
+    const qn = q.toLowerCase().replace(/\s+/g, '');
+    let newHit = null;
+    for (const [sku, p] of Object.entries(D.products)) {
+      const t = p.t.toLowerCase().replace(/\s+/g, '');
+      if ((sku === q.replace(/\D/g, '') && q.replace(/\D/g, '').length === 13) || (t.length >= 3 && (t.includes(qn) || qn.includes(t)))) { newHit = {sku, ...p}; break; }
+    }
+    if (newHit && (!ctxProduct || newHit.sku !== ctxProduct.sku)) {
+      ctxProduct = newHit;
+      renderCtx();
+    }
     if (ctxProduct) {
       ctx.push(`【选中商品】${ctxProduct.t}\n价格：¥${ctxProduct.p}\nSKU：${ctxProduct.sku}\n分类：${ctxProduct.c}\n材质说明：${ctxProduct.d}\n${sizeText(ctxProduct.sku)}`);
     }
@@ -278,7 +289,8 @@ byId('f').onsubmit = async e => {
       + '2. 顾客发条码时只允许回答精确命中的商品；标注"未命中"就必须说查不到，不得猜。\n'
       + '3. 材质/工艺/洗涤知识可正常科普。\n'
       + '4. 顾客报身高体重问尺码：优先用商品的号型映射和对照表推码数并说明依据（号型160/84A=身高160胸围84），版型修身建议大一码；无具体表时用通用尺码并注明仅供参考；童装按身高，牛仔裤按腰围英寸。\n'
-      + '5. 语气亲切像门店导购，3~5句，不提"知识库/上下文"这些词。\n\n【上下文】\n' + (ctx.join('\n---\n') || '（无）');
+      + '5. 语气亲切像门店导购，3~5句，不提"知识库/上下文"这些词。\n'
+      + '6. 【选中商品】只是用户上一个关注点：如果用户这次的问题提到别的商品名/条码，或明显在问别的话题，就以新问题为准回答，不要继续围着选中商品打转；上下文里若有【精确命中的商品】，优先回答用户这次问到的。\n\n【上下文】\n' + (ctx.join('\n---\n') || '（无）');
     const msgs = [{'role': 'system', 'content': sys}];
     for (const h of history.slice(-6)) { msgs.push({'role':'user','content':h.q}); msgs.push({'role':'assistant','content':h.a}); }
     msgs.push({'role': 'user', 'content': q});
