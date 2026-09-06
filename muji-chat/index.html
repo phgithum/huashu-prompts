@@ -153,6 +153,21 @@ function fuzzyContains(text, word, loose) {
   return false;
 }
 
+// 一键复制（clipboard API + execCommand 兜底）
+function copyText(t, btn) {
+  const done = () => { if (btn) { const o = btn.textContent; btn.textContent = '✅ 已复制'; setTimeout(() => btn.textContent = o, 1500); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(done).catch(() => fallbackCopy(t, done));
+  } else fallbackCopy(t, done);
+}
+function fallbackCopy(t, done) {
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { alert('复制失败，请手动选择文字复制'); }
+  ta.remove();
+}
+
 // 中文滑窗切词：长串标题切成两字grams（淘宝式长标题友好）
 function bigrams(s) {
   const out = [];
@@ -236,7 +251,7 @@ function search() {
         <div class="ops">
           <button class="solid" onclick="genScript('${sku}')">生成话术</button>
           <button onclick="toChat('${sku}')">去问答</button>
-          <button onclick="navigator.clipboard.writeText('${esc(p.t).replace(/'/g, "\\'")}').then(()=>this.textContent='已复制')">复制名字</button>
+          <button onclick="copyText(D.products['${sku}'].t, this)">复制名字</button>
           <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
         </div>
       </div>
