@@ -83,7 +83,7 @@ label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap
 /* ================== 基础 ================== */
 const CFG = {
   zhipu: ['4d6de0f45c174dc2b76b2d6f16b87f73', '.m3k1BumFMhNRX5kC'].join(''),
-  kb: '2096197757286182912',
+  kb: ['2096197757286182912', '2096563310295195648'],
   ark: 'ark-c38a6bd9' + '-3e93-4367-9e5a-a64edcd09058-eb0f0',
   model: 'doubao-seed-character-260628'
 };
@@ -280,7 +280,7 @@ async function retrieve(q) {
   const r = await fetch('https://open.bigmodel.cn/api/llm-application/open/knowledge/retrieve', {
     method: 'POST',
     headers: {'Authorization': 'Bearer ' + CFG.zhipu, 'Content-Type': 'application/json'},
-    body: JSON.stringify({knowledge_ids: [CFG.kb], query: q, top_k: 5, recall_method: 'mixed'})
+    body: JSON.stringify({knowledge_ids: CFG.kb, query: q, top_k: 5, recall_method: 'mixed'})
   });
   const j = await r.json();
   return (j.data || []).map(h => ({doc: (h.metadata||{}).doc_name, score: h.score, text: h.text}));
