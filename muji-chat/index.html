@@ -136,7 +136,7 @@ function showBlock() {
     </div>`;
 }
 
-/* ================== 搜索 ================== */
+/* ================== 搜索工具函数 ================== */
 function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
 function norm(s){ return (s||'').toLowerCase().replace(/\s+/g, '').replace(/[Ａ-Ｚａ-ｚ０-９：－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
 // 允许 1 个字不同的包含匹配（处理错别字）；两字词只在宽松模式下启用
@@ -152,7 +152,14 @@ function fuzzyContains(text, word, loose) {
   }
   return false;
 }
-// 匹配器：返回 {sku, p, score} 数组。SKU 必须一致，中文支持多关键词+容错
+
+// 中文滑窗切词：长串标题切成两字grams（淘宝式长标题友好）
+function bigrams(s) {
+  const out = [];
+  for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
+  return out;
+}
+// 匹配器：返回 {sku, p, score} 数组。SKU 必须一致，中文支持多关键词+容错+长标题噪音
 function matchProducts(query) {
   const q = norm(query);
   if (!q) return [];
@@ -170,29 +177,27 @@ function matchProducts(query) {
     const field = t + c;
     // 标题整体出现在查询里（处理"压缩沙发多少钱"这类问法）→ 强命中
     if (t.length >= 3 && q.includes(t)) { scored.push({sku, p, w: 60}); continue; }
-    let all = words.length > 0, any = 0, startHit = false;
-    for (const w of words) {
-      if (t.startsWith(w)) { any++; startHit = true; }
-      else if (field.includes(w)) any++;
-      else if (fuzzyContains(field, w)) any++;
-      else { all = false; }
+    // 显式多关键词（用户手动空格分隔）→ AND
+    let andMode = words.length > 1;
+    if (andMode) {
+      if (words.every(w => field.includes(w) || fuzzyContains(field, w))) scored.push({sku, p, w: 40 + words.length * 5});
+      continue;
     }
-    if (!all) continue;
-    let w = 10 + any * 5 + (startHit ? 8 : 0);
-    if (!startHit && words.length === 1 && !field.includes(words[0])) w -= 4;  // 容错命中的降权
-    scored.push({sku, p, w});
-  }
-  if (scored.length === 0 && !isNum && words.length > 0) {
-    // AND 零结果 → OR 降级（宽松容错：两字词也允许错一个字）
-    for (const [sku, p] of Object.entries(D.products)) {
-      const field = norm(p.t) + norm(p.c);
-      for (const w of words) {
-        if (field.includes(w) || fuzzyContains(field, w, true)) { scored.push({sku, p, w: 3}); break; }
-      }
+    // 单词两路：包含命中 或 长查询 bigram 覆盖率（应对淘宝长标题）
+    const w0 = words[0] || '';
+    if (field.includes(w0)) {
+      scored.push({sku, p, w: 30 + (t.startsWith(w0) ? 8 : 0)});
+    } else if (w0.length >= 6) {
+      const grams = bigrams(w0);
+      const hit = grams.filter(g => field.includes(g)).length;
+      const cov = hit / grams.length;
+      if (cov >= 0.45 && hit >= 3) scored.push({sku, p, w: Math.round(cov * 25), fuzzy: cov < 0.6});
+    } else if (fuzzyContains(field, w0)) {
+      scored.push({sku, p, w: 3, fuzzy: true});
     }
   }
   scored.sort((a, b) => b.w - a.w || (a.p.p || 0) - (b.p.p || 0));
-  return scored.slice(0, 24).map(x => ({sku: x.sku, p: x.p, fuzzy: !isNum && x.w <= 3}));
+  return scored.slice(0, 24).map(x => ({sku: x.sku, p: x.p, fuzzy: !!x.fuzzy}));
 }
 
 function search() {
