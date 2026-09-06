@@ -433,7 +433,7 @@ async function handleImage(file) {
     if (!candidates.length) {
       const q = (info.name || '') + ' ' + (info.desc || '');
       // 描述式长文本：拆词后按命中词数排序（两字以上词都算）
-      const toks = norm(q).split(/[｜，,。/、\s]+/).filter(w => w.length >= 2);
+      const toks = q.split(/[｜，,。/、\s]+/).map(norm).filter(w => w.length >= 2);
       if (toks.length) {
         const sc = [];
         for (const [sku, p] of Object.entries(D.products)) {
