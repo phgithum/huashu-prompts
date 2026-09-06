@@ -97,14 +97,20 @@ let ctxProduct = null, history = [];
 
 /* ---------- 设备授权 ---------- */
 function deviceId() {
-  let id = localStorage.getItem('muji_device_id');
-  if (!id) {
-    id = 'D' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
-    localStorage.setItem('muji_device_id', id);
-  }
-  return id;
+  const gen = () => 'D' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+  try {
+    let id = localStorage.getItem('muji_device_id');
+    if (!id) { id = gen(); localStorage.setItem('muji_device_id', id); }
+    return id;
+  } catch (e) { return gen(); }  // localStorage 不可用时用临时编号
 }
 const MY_ID = deviceId();
+window.onerror = function (msg, src, line) {
+  const bar = document.createElement('div');
+  bar.style.cssText = 'background:#b00;color:#fff;padding:6px 14px;font-size:12px';
+  bar.textContent = '页面脚本出错：' + msg + ' @' + (src || '').split('/').pop() + ':' + line;
+  document.body.insertBefore(bar, document.body.firstChild);
+};
 async function checkAcl() {
   try {
     const r = await fetch('acl.json?t=' + Date.now(), {cache: 'no-store'});
@@ -133,6 +139,10 @@ function search() {
   const raw = byId('q').value.trim().toLowerCase().replace(/\s+/g, '');
   const grid = byId('grid');
   if (!raw) { grid.innerHTML = ''; return; }
+  if (!Object.keys(D.products).length) {
+    grid.innerHTML = '<div class="empty">商品数据未加载成功，请刷新页面重试（Ctrl+F5）</div>';
+    return;
+  }
   const hits = [];
   for (const [sku, p] of Object.entries(D.products)) {
     const t = (p.t + sku).toLowerCase().replace(/\s+/g, '');
