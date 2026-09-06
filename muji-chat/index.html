@@ -315,7 +315,7 @@ function search() {
       <details class="kcard">
         <summary><b>${esc(h.doc)}</b>（${Number(h.score).toFixed(2)}）</summary>
         <div class="pre">${esc((h.text || '').slice(0, 600))}</div>
-      </details>`).join('') : '<div class="empty">知识库无相关内容</div>';
+      </details>`).join('') : '<div class="empty">知识库无相关内容</div>');
   }).catch(() => kres.innerHTML = '');
 }
 
