@@ -432,7 +432,19 @@ async function handleImage(file) {
     }
     if (!candidates.length) {
       const q = (info.name || '') + ' ' + (info.desc || '');
-      candidates = matchProducts(q || (info.name || '')).slice(0, 5);
+      // 描述式长文本：拆词后按命中词数排序（两字以上词都算）
+      const toks = norm(q).split(/[｜，,。/、\s]+/).filter(w => w.length >= 2);
+      if (toks.length) {
+        const sc = [];
+        for (const [sku, p] of Object.entries(D.products)) {
+          const field = norm(p.t) + norm(p.c);
+          let n = 0;
+          for (const w of toks) if (field.includes(w)) n++;
+          if (n > 0) sc.push({sku, p, n, len: norm(p.t).length});
+        }
+        sc.sort((a, b) => b.n - a.n || a.len - b.len);
+        candidates = sc.slice(0, 5).map(x => ({sku: x.sku, p: x.p, fuzzy: x.n < Math.ceil(toks.length / 2)}));
+      }
       bot.textContent = info.name ? ('识别到：' + info.name + (info.desc ? '｜' + info.desc : '')) : (info.desc || '没能识别出商品，请换张清晰的照片。');
     }
     if (candidates.length) {
