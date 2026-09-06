@@ -35,6 +35,7 @@ button.mini { background: #fff; color: #7a0000; border: 1px solid #ccc; border-r
     <input id="token" type="password" placeholder="粘贴你的 GitHub Personal Access Token（只存在本机浏览器，不会上传）">
     <button class="main" style="flex:0 0 auto" onclick="loadAcl()">连接</button>
   </div>
+  <div id="loginMsg" class="note">点击「连接」后这里会显示状态</div>
   <div class="note">Token 需要 repo 权限。token 只保存在你自己浏览器的 localStorage 里，用于直接调 GitHub 接口修改 acl.json，不经过任何第三方。</div>
 </div>
 
@@ -94,33 +95,56 @@ async function api(path, opt) {
     {...opt, headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opt.headers||{})}});
   return r;
 }
+function b64ToUtf8(b64) {
+  const bin = atob(b64.replace(/\s/g, ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder('utf-8').decode(bytes);
+}
+function setStatus(text, cls) {
+  for (const id of ['loginMsg', 'msg']) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = text; el.className = cls || ''; }
+  }
+}
 async function loadAcl() {
   token = document.getElementById('token').value.trim();
-  if (!token) return;
-  const r = await api(PATH, {});
-  if (r.status === 200) {
-    const j = await r.json();
-    acl = JSON.parse(atob(j.content));
-    document.getElementById('panel').style.display = '';
-    document.getElementById('mode').value = acl.mode || 'whitelist';
-    render();
-  } else if (r.status === 404) {
-    document.getElementById('panel').style.display = '';
-    render();
-    await saveAcl('创建名单');
-  } else {
-    alert('连接失败：' + r.status + ' ' + (await r.text()).slice(0, 120));
+  if (!token) { alert('请先粘贴 GitHub Token'); return; }
+  setStatus('连接中…');
+  document.getElementById('panel').style.display = 'none';
+  try {
+    const r = await api(PATH, {});
+    if (r.status === 200) {
+      const j = await r.json();
+      acl = JSON.parse(b64ToUtf8(j.content));
+      document.getElementById('panel').style.display = '';
+      document.getElementById('mode').value = acl.mode || 'whitelist';
+      render();
+      setStatus('✅ 连接成功，下面开始管理', 'ok');
+    } else if (r.status === 404) {
+      document.getElementById('panel').style.display = '';
+      render();
+      await saveAcl('创建名单');
+    } else {
+      const t = await r.text();
+      setStatus('❌ 连接失败 ' + r.status + '：' + (r.status === 401 ? 'Token 无效或过期' : t.slice(0, 120)), 'err');
+    }
+  } catch (e) {
+    setStatus('❌ 网络错误：' + e.message, 'err');
   }
 }
 async function saveAcl(msg) {
   acl.mode = document.getElementById('mode').value;
-  const r = await api(PATH, {});
-  const body = {message: msg || 'update acl', content: btoa(unescape(encodeURIComponent(JSON.stringify(acl, null, 2)))), branch: 'main'};
-  if (r.status === 200) body.sha = (await r.json()).sha;
-  const p = await api(PATH, {method: 'PUT', body: JSON.stringify(body)});
-  const m = document.getElementById('msg');
-  m.textContent = p.status === 200 || p.status === 201 ? '✅ 已保存，用户刷新页面即生效' : '❌ 保存失败：' + p.status;
-  m.className = (p.status === 200 || p.status === 201) ? 'ok' : 'err';
+  setStatus('保存中…');
+  try {
+    const r = await api(PATH, {});
+    const body = {message: msg || 'update acl', content: btoa(unescape(encodeURIComponent(JSON.stringify(acl, null, 2)))), branch: 'main'};
+    if (r.status === 200) body.sha = (await r.json()).sha;
+    const p = await api(PATH, {method: 'PUT', body: JSON.stringify(body)});
+    setStatus((p.status === 200 || p.status === 201) ? '✅ 已保存，用户刷新页面即生效' : '❌ 保存失败：' + p.status + ' ' + (await p.text()).slice(0, 120), (p.status === 200 || p.status === 201) ? 'ok' : 'err');
+  } catch (e) {
+    setStatus('❌ 网络错误：' + e.message, 'err');
+  }
 }
 function render() {
   const dl = document.getElementById('devList'), bl = document.getElementById('banList');
