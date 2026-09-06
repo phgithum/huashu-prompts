@@ -163,6 +163,7 @@ function search() {
         <div class="ops">
           <button class="solid" onclick="genScript('${sku}')">生成话术</button>
           <button onclick="toChat('${sku}')">去问答</button>
+          <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
         </div>
       </div>
     </div>`).join('') || '<div class="empty">没找到相关商品，换个关键词试试</div>';
