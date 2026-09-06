@@ -275,11 +275,21 @@ function search() {
   byId('prodSec').style.display = '';
   grid.innerHTML = hits.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)) || '';
   if (!hits.length) grid.innerHTML = '<div class="empty">没找到相关商品，换个关键词试试</div>';
-  // 知识库命中（无状态，独立查询）
+  // 知识命中（无状态，独立查询）：命中商品时改用商品名查询，条码/短词才不会吃掉知识
   kres.innerHTML = '<div class="empty">知识库检索中…</div>';
   byId('kSec').style.display = '';
-  retrieve(query).then(hits2 => {
-    kres.innerHTML = hits2.length ? hits2.map(h => `
+  let kq = query;
+  if (hits.length && (norm(query).length < 5 || /^\d+$/.test(norm(query)))) kq = hits[0].p.t;
+  // 本地尺码/话术资料（无需联网，来自官网OCR）
+  const localCards = hits.slice(0, 3).map(({sku}) => {
+    const st = sizeText(sku);
+    if (!st) return '';
+    return `<details class="kcard"><summary><b>官方尺码与版型资料</b>｜${esc(D.products[sku].t)}</summary><div class="pre">${esc(st)}</div></details>`;
+  }).join('');
+  Promise.all([retrieve(kq), retrieve(hits.length ? hits[0].p.t : query)]).then(([a, b2]) => {
+    const seen = new Set();
+    const merged = [...a, ...b2].filter(h => { const k = h.doc + h.text.slice(0, 50); if (seen.has(k)) return false; seen.add(k); return true; });
+    kres.innerHTML = (localCards || '') + (merged.length ? merged.map(h => `
       <details class="kcard">
         <summary><b>${esc(h.doc)}</b>（${Number(h.score).toFixed(2)}）</summary>
         <div class="pre">${esc((h.text || '').slice(0, 600))}</div>
