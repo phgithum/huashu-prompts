@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MUJI 商品搜索 · 话术生成 · 知识问答</title>
+<title>MUJI 商品知识库搜索</title>
 <script src="data.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -11,72 +11,66 @@ body { font-family: "Microsoft YaHei", sans-serif; background: #f4f2ee; color: #
 header { background: #7a0000; color: #fff; padding: 12px 18px; }
 header h1 { font-size: 16px; font-weight: 600; max-width: 1100px; margin: 0 auto; }
 .wrap { max-width: 1100px; margin: 0 auto; padding: 14px; }
-h2.sec { font-size: 15px; color: #7a0000; margin: 6px 0 10px; }
-.searchbar { display: flex; gap: 8px; margin: 6px 0 12px; }
-.searchbar input { flex: 1; padding: 11px 15px; border: 1px solid #d8d2c6; border-radius: 10px; font-size: 14px; outline: none; }
+h2.sec { font-size: 15px; color: #7a0000; margin: 14px 0 10px; }
+.searchbar { display: flex; gap: 8px; margin: 6px 0 8px; }
+.searchbar input { flex: 1; padding: 12px 15px; border: 1px solid #d8d2c6; border-radius: 10px; font-size: 14px; outline: none; }
 .searchbar input:focus { border-color: #7a0000; }
-.hint { font-size: 12px; color: #999; margin-bottom: 10px; }
-#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.hint { font-size: 12px; color: #999; margin-bottom: 12px; line-height: 1.6; }
+.hint b { color: #7a0000; }
+#grid, #imgGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
 .card { background: #fff; border: 1px solid #e7e1d6; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
 .card img { width: 100%; height: 160px; object-fit: cover; background: #f0ece4; }
 .card .bd { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .card .t { font-size: 13px; line-height: 1.45; max-height: 3.6em; overflow: hidden; }
 .card .p { color: #7a0000; font-weight: 700; font-size: 15px; }
 .card .s { font-size: 11px; color: #999; }
-.card .ops { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; }
-.card .ops button { flex: 1; border: 1px solid #7a0000; background: #fff; color: #7a0000; border-radius: 6px; padding: 5px 0; font-size: 12px; cursor: pointer; }
+.card .ops { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; flex-wrap: wrap; }
+.card .ops button { flex: 1; min-width: 64px; border: 1px solid #7a0000; background: #fff; color: #7a0000; border-radius: 6px; padding: 5px 0; font-size: 12px; cursor: pointer; }
 .card .ops button.solid { background: #7a0000; color: #fff; }
 .card .ops button:hover { opacity: .85; }
+/* 话术输出 */
 #scriptBox { display: none; background: #fff; border: 1px solid #e7e1d6; border-radius: 10px; padding: 14px; margin: 12px 0; }
 #scriptBox h3 { font-size: 14px; color: #7a0000; margin-bottom: 8px; }
 #scriptBox .txt { font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
 #scriptBox .close { float: right; cursor: pointer; color: #999; font-size: 12px; border: none; background: none; }
-#chatSec { margin-top: 26px; }
-#chat { display: flex; flex-direction: column; gap: 12px; min-height: 160px; max-height: 60vh; overflow-y: auto; margin-bottom: 12px; }
-.msg { max-width: 82%; padding: 10px 14px; border-radius: 12px; line-height: 1.7; font-size: 14px; white-space: pre-wrap; }
-.user { align-self: flex-end; background: #7a0000; color: #fff; border-bottom-right-radius: 3px; }
-.bot { align-self: flex-start; background: #fff; border: 1px solid #e3ddd3; border-bottom-left-radius: 3px; }
-.refs { align-self: flex-start; max-width: 90%; font-size: 12px; color: #666; background: #efeadf; border-radius: 8px; padding: 8px 12px; }
-.refs summary { cursor: pointer; }
-.refs li { margin: 6px 0 0 16px; }
-.typing::after { content: "▍"; animation: blink 1s infinite; }
-@keyframes blink { 50% { opacity: 0; } }
-.chatbar { display: flex; gap: 8px; }
-.chatbar input { flex: 1; padding: 12px 15px; border: 1px solid #d8d2c6; border-radius: 10px; font-size: 14px; outline: none; }
-.chatbar input:focus { border-color: #7a0000; }
-.chatbar button { padding: 0 24px; background: #7a0000; color: #fff; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; }
-.chatbar button:disabled { opacity: .5; }
-.ctxchip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px dashed #7a0000; color: #7a0000; border-radius: 14px; padding: 3px 10px; font-size: 12px; margin-bottom: 8px; }
-.ctxchip button { border: none; background: none; color: #999; cursor: pointer; }
-label.kb { font-size: 12px; color: #666; display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
-.empty { color: #999; font-size: 13px; padding: 30px 0; text-align: center; }
+/* 知识命中 */
+.kcard { background: #fff; border: 1px solid #e7e1d6; border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; }
+.kcard summary { cursor: pointer; font-size: 13px; color: #555; }
+.kcard .pre { white-space: pre-wrap; font-size: 13px; line-height: 1.7; margin-top: 8px; color: #444; }
+.kcard b { color: #7a0000; }
+.empty { color: #999; font-size: 13px; padding: 24px 0; text-align: center; }
+#pasteTip { position: fixed; top: 14px; right: 14px; background: #7a0000; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; display: none; z-index: 9; }
 </style>
 </head>
 <body>
-<header><h1>MUJI 商品助手 —— 搜索商品 / 生成话术 / 知识问答</h1></header>
+<header><h1>MUJI 商品知识库搜索 —— 文字 / 条码 / 款号 / 图片识别</h1></header>
+<div id="pasteTip">已收到图片，识别中…</div>
 <div class="wrap">
 
-<section id="searchSec">
-  <h2 class="sec">🔍 商品搜索</h2>
   <div class="searchbar">
-    <input id="q" placeholder="输入商品名称或 13 位条码 SKU，如：压缩沙发 / 4550723162258 / 毛衣">
+    <input id="q" autofocus placeholder="输入商品名 / 13位条码 / 款号(如AE0ZIA5S) / 从淘宝复制标题 / 直接按 Ctrl+V 粘贴顾客发的图片">
   </div>
-  <div class="hint">支持商品名片段、条码精确查询；点击卡片上的「生成话术」直接出销售文案，「去问答」带着该商品到底部继续问答。</div>
+  <div class="hint">
+    <b>文字</b>：商品名片段、13位条码（一字不差）、款号、淘宝长标题、错别字都能搜；
+    <b>图片</b>：直接 Ctrl+V 粘贴——吊牌照自动读条码/款号精确识别，实物照自动以图搜图给出最像的几款。
+    每次搜索相互独立，无记录。
+  </div>
+
   <div id="scriptBox">
     <button class="close" onclick="document.getElementById('scriptBox').style.display='none'">关闭 ✕</button>
     <h3 id="scriptTitle"></h3>
     <div class="txt" id="scriptTxt"></div>
   </div>
-  <div id="grid"></div>
-</section>
 
-<section id="chatSec">
-  <h2 class="sec">💬 知识问答</h2>
-  <div id="ctxwrap"></div>
-  <label class="kb"><input type="checkbox" id="useKb" checked> 回答前检索知识库（材质/洗涤/尺码指南）</label>
-  <div id="chat"><div class="empty">在这里输入问题，例如：这件商品多少钱 / 我 170cm 60kg 穿什么码 / 水洗加工是什么意思</div></div>
-  <form id="f" class="chatbar"><input id="cq" autocomplete="off" placeholder="输入顾客的问题，或先在上方搜索选商品再提问…"><button id="send">发送</button></form>
-</section>
+  <h2 class="sec" id="imgSec" style="display:none">📷 图片识别结果</h2>
+  <div id="imgGrid"></div>
+  <div id="imgMsg" class="empty" style="display:none"></div>
+
+  <h2 class="sec" id="prodSec" style="display:none">🛍 商品结果</h2>
+  <div id="grid"></div>
+
+  <h2 class="sec" id="kSec" style="display:none">📚 相关知识（话术/注意事项/尺码/对比）</h2>
+  <div id="kres"></div>
 
 </div>
 <script>
@@ -85,17 +79,15 @@ const CFG = {
   zhipu: ['4d6de0f45c174dc2b76b2d6f16b87f73', '.m3k1BumFMhNRX5kC'].join(''),
   kb: ['2096197757286182912', '2096563310295195648'],
   ark: 'ark-c38a6bd9' + '-3e93-4367-9e5a-a64edcd09058-eb0f0',
-  model: 'doubao-seed-character-260628'
+  visionModel: 'doubao-seed-1-6-vision-250815'
 };
 const KVDB = 'https://kvdb.io/Ks73CVNzBmXEcgUhaBfkFd';
 const D = window.MUJI_DATA || {products: {}, sizes: {}};
 const byId = id => document.getElementById(id);
-let ctxProduct = null, history = [];
-
 window.onerror = function (msg, src, line) {
   const bar = document.createElement('div');
   bar.style.cssText = 'background:#b00;color:#fff;padding:6px 14px;font-size:12px';
-  bar.textContent = '页面脚本出错：' + msg + ' @' + (src || '').split('/').pop() + ':' + line;
+  bar.textContent = '页面脚本出错：' + msg;
   document.body.insertBefore(bar, document.body.firstChild);
 };
 
@@ -109,13 +101,6 @@ function deviceId() {
   } catch (e) { return gen(); }
 }
 const MY_ID = deviceId();
-
-async function recordVisit() {
-  try {
-    await fetch(KVDB + '/visits/' + MY_ID, {method: 'PUT', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ts: new Date().toLocaleString('zh-CN'), ua: navigator.userAgent.slice(0, 90)})});
-  } catch (e) {}
-}
 async function checkAcl() {
   try {
     const r = await fetch(KVDB + '/acl?t=' + Date.now(), {cache: 'no-store'});
@@ -127,6 +112,12 @@ async function checkAcl() {
     return 'ok';
   } catch (e) { return 'ok'; }
 }
+async function recordVisit() {
+  try {
+    await fetch(KVDB + '/visits/' + MY_ID, {method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ts: new Date().toLocaleString('zh-CN'), ua: navigator.userAgent.slice(0, 90)})});
+  } catch (e) {}
+}
 function showBlock() {
   document.querySelector('.wrap').innerHTML =
     `<div style="background:#fff;border:1px solid #e7e1d6;border-radius:10px;padding:40px 20px;text-align:center;margin-top:40px">
@@ -136,10 +127,9 @@ function showBlock() {
     </div>`;
 }
 
-/* ================== 搜索工具函数 ================== */
+/* ================== 工具 ================== */
 function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
 function norm(s){ return (s||'').toLowerCase().replace(/\s+/g, '').replace(/[Ａ-Ｚａ-ｚ０-９：－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
-// 允许 1 个字不同的包含匹配（处理错别字）；两字词只在宽松模式下启用
 function fuzzyContains(text, word, loose) {
   if (text.includes(word)) return true;
   if (word.length < (loose ? 2 : 3)) return false;
@@ -152,8 +142,11 @@ function fuzzyContains(text, word, loose) {
   }
   return false;
 }
-
-// 一键复制（clipboard API + execCommand 兜底）
+function bigrams(s) {
+  const out = [];
+  for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
+  return out;
+}
 function copyText(t, btn) {
   const done = () => { if (btn) { const o = btn.textContent; btn.textContent = '✅ 已复制'; setTimeout(() => btn.textContent = o, 1500); } };
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -167,14 +160,18 @@ function fallbackCopy(t, done) {
   try { document.execCommand('copy'); done(); } catch (e) { alert('复制失败，请手动选择文字复制'); }
   ta.remove();
 }
-
-// 中文滑窗切词：长串标题切成两字grams（淘宝式长标题友好）
-function bigrams(s) {
-  const out = [];
-  for (let i = 0; i < s.length - 1; i++) out.push(s.slice(i, i + 2));
-  return out;
+function sizeText(sku) {
+  const s = D.sizes[sku];
+  if (!s) return '';
+  const parts = [];
+  if (s.r) parts.push('尺码推荐(号型映射)：' + s.r);
+  if (s.tb) parts.push('尺码对照表(cm)：' + s.tb);
+  if (s.m) parts.push('模特参考：' + s.m);
+  if (s.f) parts.push('版型：' + s.f);
+  return parts.length ? parts.join('；') : '尺码数据：详情未提供尺码表，按品类通用尺码回答并注明仅供参考。';
 }
-// 匹配器：返回 {sku, p, score} 数组。SKU 必须一致，中文支持多关键词+容错+长标题噪音
+
+/* ================== 商品匹配 ================== */
 function matchProducts(query) {
   const q = norm(query);
   if (!q) return [];
@@ -183,27 +180,22 @@ function matchProducts(query) {
   const scored = [];
   for (const [sku, p] of Object.entries(D.products)) {
     if (isNum) {
-      // 纯数字只搜条码：13位全等 > 前缀
       if (sku === q) scored.push({sku, p, w: 100});
       else if (sku.startsWith(q)) scored.push({sku, p, w: 80});
       continue;
     }
-    // 款号查询（字母数字混合5-9位）：款号全等/前缀 > 标题包含
     if (/^[a-z0-9]{5,9}$/.test(q) && /[a-z]/.test(q) && /[0-9]/.test(q) && p.s) {
       if (p.s.toLowerCase() === q) { scored.push({sku, p, w: 100}); continue; }
       if (p.s.toLowerCase().startsWith(q) || q.startsWith(p.s.toLowerCase())) { scored.push({sku, p, w: 85}); continue; }
     }
     const t = norm(p.t), c = norm(p.c);
     const field = t + c;
-    // 标题整体出现在查询里（处理"压缩沙发多少钱"这类问法）→ 强命中
     if (t.length >= 3 && q.includes(t)) { scored.push({sku, p, w: 60}); continue; }
-    // 显式多关键词（用户手动空格分隔）→ AND
     let andMode = words.length > 1;
     if (andMode) {
       if (words.every(w => field.includes(w) || fuzzyContains(field, w))) scored.push({sku, p, w: 40 + words.length * 5});
       continue;
     }
-    // 单词两路：包含命中 或 长查询 bigram 覆盖率（应对淘宝长标题）
     const w0 = words[0] || '';
     if (field.includes(w0)) {
       scored.push({sku, p, w: 30 + (t.startsWith(w0) ? 8 : 0)});
@@ -217,7 +209,6 @@ function matchProducts(query) {
     }
   }
   if (scored.length === 0 && !isNum) {
-    // 全零 → 宽松兜底（错别字容错，两字词也放开）
     for (const [sku, p] of Object.entries(D.products)) {
       const field = norm(p.t) + norm(p.c);
       for (const w of words.length ? words : [q]) {
@@ -231,17 +222,20 @@ function matchProducts(query) {
   scored.sort((a, b) => b.w - a.w || (a.p.p || 0) - (b.p.p || 0));
   return scored.slice(0, 24).map(x => ({sku: x.sku, p: x.p, fuzzy: !!x.fuzzy}));
 }
-
-function search() {
-  const query = byId('q').value.trim();
-  const grid = byId('grid');
-  if (!query) { grid.innerHTML = ''; return; }
-  if (!Object.keys(D.products).length) {
-    grid.innerHTML = '<div class="empty">商品数据未加载成功，请刷新页面重试（Ctrl+F5）</div>';
-    return;
+// 描述式长文本排名（按命中词数）
+function rankByTokens(toks, limit) {
+  const sc = [];
+  for (const [sku, p] of Object.entries(D.products)) {
+    const field = norm(p.t) + norm(p.c);
+    let n = 0;
+    for (const w of toks) if (field.includes(w)) n++;
+    if (n > 0) sc.push({sku, p, n, len: norm(p.t).length});
   }
-  const hits = matchProducts(query);
-  grid.innerHTML = hits.map(({sku, p, fuzzy}) => `
+  sc.sort((a, b) => b.n - a.n || a.len - b.len);
+  return sc.slice(0, limit).map(x => ({sku: x.sku, p: x.p, fuzzy: x.n < Math.ceil(toks.length / 2)}));
+}
+function cardHtml(sku, p, fuzzy) {
+  return `
     <div class="card">
       <img src="${p.i || ''}" onerror="this.style.visibility='hidden'" loading="lazy">
       <div class="bd">
@@ -250,23 +244,51 @@ function search() {
         <div class="s">SKU ${sku}</div>
         <div class="ops">
           <button class="solid" onclick="genScript('${sku}')">生成话术</button>
-          <button onclick="toChat('${sku}')">去问答</button>
           <button onclick="copyText(D.products['${sku}'].t, this)">复制名字</button>
           <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
         </div>
       </div>
-    </div>`).join('') || '<div class="empty">没找到相关商品，换个关键词试试</div>';
+    </div>`;
 }
 
-function sizeText(sku) {
-  const s = D.sizes[sku];
-  if (!s) return '';
-  const parts = [];
-  if (s.r) parts.push('尺码推荐(号型映射)：' + s.r);
-  if (s.tb) parts.push('尺码对照表(cm)：' + s.tb);
-  if (s.m) parts.push('模特参考：' + s.m);
-  if (s.f) parts.push('版型：' + s.f);
-  return parts.length ? parts.join('；') : '尺码数据：详情未提供尺码表，按品类通用尺码回答并注明仅供参考。';
+/* ================== 文字搜索 ================== */
+function search() {
+  const query = byId('q').value.trim();
+  const grid = byId('grid'), kres = byId('kres');
+  if (!query) {
+    grid.innerHTML = ''; kres.innerHTML = '';
+    byId('prodSec').style.display = byId('kSec').style.display = 'none';
+    return;
+  }
+  if (!Object.keys(D.products).length) {
+    grid.innerHTML = '<div class="empty">商品数据未加载成功，请刷新页面重试（Ctrl+F5）</div>';
+    return;
+  }
+  const hits = matchProducts(query);
+  byId('prodSec').style.display = '';
+  grid.innerHTML = hits.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)) || '';
+  if (!hits.length) grid.innerHTML = '<div class="empty">没找到相关商品，换个关键词试试</div>';
+  // 知识库命中（无状态，独立查询）
+  kres.innerHTML = '<div class="empty">知识库检索中…</div>';
+  byId('kSec').style.display = '';
+  retrieve(query).then(hits2 => {
+    kres.innerHTML = hits2.length ? hits2.map(h => `
+      <details class="kcard">
+        <summary><b>${esc(h.doc)}</b>（${Number(h.score).toFixed(2)}）</summary>
+        <div class="pre">${esc((h.text || '').slice(0, 600))}</div>
+      </details>`).join('') : '<div class="empty">知识库无相关内容</div>';
+  }).catch(() => kres.innerHTML = '');
+}
+
+/* ================== 知识库检索 ================== */
+async function retrieve(q) {
+  const r = await fetch('https://open.bigmodel.cn/api/llm-application/open/knowledge/retrieve', {
+    method: 'POST',
+    headers: {'Authorization': 'Bearer ' + CFG.zhipu, 'Content-Type': 'application/json'},
+    body: JSON.stringify({knowledge_ids: CFG.kb, query: q, top_k: 5, recall_method: 'mixed'})
+  });
+  const j = await r.json();
+  return (j.data || []).map(h => ({doc: (h.metadata||{}).doc_name, score: h.score, text: h.text}));
 }
 
 /* ================== 话术生成 ================== */
@@ -279,144 +301,25 @@ async function genScript(sku) {
   const sys = '你是无印良品的资深导购。请根据商品信息生成一段发给顾客的销售话术：1)开头一句抓住需求的推荐语；2)2-3个卖点（材质/工艺/功能，来自商品信息，不编造数字）；3)一句使用/搭配建议；4)结尾轻推下单。语气亲切不油腻，总共不超过150字，直接输出话术本身。'
     + '\n\n商品信息：\n标题：' + p.t + '\n价格：¥' + p.p + '\nSKU：' + sku + '\n分类：' + p.c + '\n材质说明：' + p.d + '\n' + sizeText(sku);
   try {
-    const out = await streamArk([{'role':'system','content':sys},{'role':'user','content':'请为这个商品生成话术'}], t => byId('scriptTxt').textContent = t);
+    const out = await visionCall([{type: 'text', 'text': '请为这个商品生成话术'}], sys, false);
     if (!out) byId('scriptTxt').textContent = '生成失败，请重试';
   } catch (err) { byId('scriptTxt').textContent = '出错：' + err.message; }
 }
 
-/* ================== 问答 ================== */
-function toChat(sku) {
-  const p = D.products[sku];
-  ctxProduct = {sku, ...p};
-  renderCtx();
-  byId('chatSec').scrollIntoView({behavior: 'smooth'});
-  byId('cq').focus();
-}
-function renderCtx() {
-  byId('ctxwrap').innerHTML = ctxProduct
-    ? `<span class="ctxchip">🏷 当前商品：${esc(ctxProduct.t)} ¥${ctxProduct.p}
-       <button onclick="ctxProduct=null;renderCtx()">✕</button></span>` : '';
-}
-async function retrieve(q) {
-  const r = await fetch('https://open.bigmodel.cn/api/llm-application/open/knowledge/retrieve', {
-    method: 'POST',
-    headers: {'Authorization': 'Bearer ' + CFG.zhipu, 'Content-Type': 'application/json'},
-    body: JSON.stringify({knowledge_ids: CFG.kb, query: q, top_k: 5, recall_method: 'mixed'})
-  });
-  const j = await r.json();
-  return (j.data || []).map(h => ({doc: (h.metadata||{}).doc_name, score: h.score, text: h.text}));
-}
-async function streamArk(messages, onDelta) {
-  const resp = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
+/* ================== 通用视觉调用（doubao vision，多图） ================== */
+async function visionCall(contentParts, sysPrompt) {
+  const r = await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions', {
     method: 'POST',
     headers: {'Authorization': 'Bearer ' + CFG.ark, 'Content-Type': 'application/json'},
-    body: JSON.stringify({model: CFG.model, messages, max_tokens: 900, stream: true, temperature: 0.7})
+    body: JSON.stringify({model: CFG.visionModel, max_tokens: 900, temperature: 0.1,
+      messages: [{'role': 'system', 'content': sysPrompt}, {'role': 'user', 'content': contentParts}]})
   });
-  if (!resp.ok) throw new Error('API ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
-  const reader = resp.body.getReader(), dec = new TextDecoder();
-  let buf = '', out = '';
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, {stream: true});
-    let i;
-    while ((i = buf.indexOf('\n')) >= 0) {
-      let line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
-      if (line.startsWith('data:')) line = line.slice(5).trim();
-      if (!line || line === '[DONE]') continue;
-      try {
-        const j = JSON.parse(line);
-        const piece = ((j.choices||[{}])[0].delta||{}).content || '';
-        if (piece) { out += piece; onDelta && onDelta(out); }
-      } catch (e) {}
-    }
-  }
-  return out;
-}
-
-byId('f').onsubmit = async e => {
-  e.preventDefault();
-  const q = byId('cq').value.trim();
-  if (!q) return;
-  byId('cq').value = '';
-  const chat = byId('chat');
-  const empty = chat.querySelector('.empty');
-  if (empty) empty.remove();
-  const add = (cls, txt) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = txt; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; };
-  add('user', q);
-  const bot = add('bot typing', '');
-  byId('send').disabled = true;
-  let answer = '';
-  try {
-    let ctx = [];
-    // 自动切换选中商品：条码必须全等，商品名需问题包含完整标题
-    const qn = norm(q);
-    let newHit = null;
-    const digits = q.replace(/\D/g, '');
-    if (/^\d{13}$/.test(digits)) {
-      if (D.products[digits]) newHit = {sku: digits, ...D.products[digits]};
-    } else {
-      for (const [sku, p] of Object.entries(D.products)) {
-        const t = norm(p.t);
-        if (t.length >= 3 && (qn.includes(t) || t.includes(qn) && qn.length >= t.length - 2)) { newHit = {sku, ...p}; break; }
-      }
-    }
-    if (newHit && (!ctxProduct || newHit.sku !== ctxProduct.sku)) {
-      ctxProduct = newHit;
-      renderCtx();
-    }
-    if (ctxProduct) {
-      ctx.push(`【选中商品】${ctxProduct.t}\n价格：¥${ctxProduct.p}\nSKU：${ctxProduct.sku}\n分类：${ctxProduct.c}\n材质说明：${ctxProduct.d}\n${sizeText(ctxProduct.sku)}`);
-    }
-    if (byId('useKb').checked) {
-      const hits = await retrieve(q);
-      if (hits.length) {
-        const d = document.createElement('details');
-        d.className = 'refs';
-        d.innerHTML = `<summary>📚 命中知识库 ${hits.length} 条</summary><ul>` +
-          hits.map(r => `<li><b>${esc(r.doc)}</b>（${Number(r.score).toFixed(2)}）${esc((r.text||'').slice(0,140))}…</li>`).join('') + '</ul>';
-        chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
-        ctx.push(...hits.map(h => `（来源:${h.doc}）${h.text}`));
-      }
-    }
-    const sys = '你是无印良品（MUJI）的资深导购助手。\n'
-      + '1. 上下文里有对应商品时：价格、SKU、材质必须照抄原文，不改数字。\n'
-      + '2. 顾客发条码时只允许回答精确命中的商品；标注"未命中"就必须说查不到，不得猜。\n'
-      + '3. 材质/工艺/洗涤知识可正常科普。\n'
-      + '4. 顾客报身高体重问尺码：优先用商品的号型映射和对照表推码数并说明依据（号型160/84A=身高160胸围84），版型修身建议大一码；无具体表时用通用尺码并注明仅供参考；童装按身高，牛仔裤按腰围英寸。\n'
-      + '5. 语气亲切像门店导购，3~5句，不提"知识库/上下文"这些词。\n'
-      + '6. 【选中商品】只是用户上一个关注点：如果用户这次的问题提到别的商品名/条码，或明显在问别的话题，就以新问题为准回答，不要继续围着选中商品打转；上下文里若有【精确命中的商品】，优先回答用户这次问到的。\n\n【上下文】\n' + (ctx.join('\n---\n') || '（无）');
-    const msgs = [{'role': 'system', 'content': sys}];
-    for (const h of history.slice(-6)) { msgs.push({'role':'user','content':h.q}); msgs.push({'role':'assistant','content':h.a}); }
-    msgs.push({'role': 'user', 'content': q});
-    answer = await streamArk(msgs, t => { bot.textContent = t; chat.scrollTop = chat.scrollHeight; });
-    bot.textContent = answer || '（空回复，请重试）';
-  } catch (err) {
-    bot.textContent = '出错：' + err.message;
-  }
-  bot.classList.remove('typing');
-  history.push({q, a: answer});
-  byId('send').disabled = false;
-};
-
-/* ================== 图片识款 ================== */
-async function visionCall(b64dataUrl, prompt) {
-  const content = [{'type': 'image_url', 'image_url': {'url': b64dataUrl}}, {'type': 'text', 'text': prompt}];
-  const tryReq = (url, key, model) => fetch(url, {
-    method: 'POST',
-    headers: {'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'},
-    body: JSON.stringify({model, messages: [{'role': 'user', 'content': content}], max_tokens: 500, temperature: 0.1})
-  });
-  let r;
-  try {
-    r = await tryReq('https://open.bigmodel.cn/api/paas/v4/chat/completions', CFG.zhipu, 'glm-4v-flash');
-    if (!r.ok) throw new Error('glm ' + r.status);
-  } catch (e) {
-    r = await tryReq('https://ark.cn-beijing.volces.com/api/v3/chat/completions', CFG.ark, 'doubao-seed-1-6-vision-250815');
-  }
+  if (!r.ok) throw new Error('视觉接口 ' + r.status + ' ' + (await r.text()).slice(0, 200));
   const j = await r.json();
   return (((j.choices || [{}])[0].message || {}).content || '').trim();
 }
+
+/* ================== 图片识别 ================== */
 function compressImage(file) {
   return new Promise(resolve => {
     const img = new Image();
@@ -431,91 +334,82 @@ function compressImage(file) {
     img.src = URL.createObjectURL(file);
   });
 }
+function showImgResults(candidates, msg) {
+  byId('imgSec').style.display = '';
+  byId('imgGrid').innerHTML = candidates.map(({sku, p, fuzzy}) => cardHtml(sku, p, fuzzy)) || '';
+  const m = byId('imgMsg');
+  m.style.display = msg ? '' : 'none';
+  m.textContent = msg || '';
+}
 async function handleImage(file) {
-  const chat = byId('chat');
-  const empty = chat.querySelector('.empty');
-  if (empty) empty.remove();
-  const add = (cls, txt) => { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = txt; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; return d; };
-  const status = add('user', '📷 [发送了一张图片，识别中…]');
-  const bot = add('bot typing', '看图识别中…');
+  const tip = byId('pasteTip');
+  tip.style.display = 'block'; tip.textContent = '已收到图片，识别中…';
+  byId('imgSec').style.display = ''; byId('imgGrid').innerHTML = ''; byId('imgMsg').style.display = 'none';
   try {
     const dataUrl = await compressImage(file);
-    const desc = await visionCall(dataUrl,
-      '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签（上面印有款号如AE0ZIA5S、CN字样、455开头的条码），也可能是商品实物。仔细看图并只输出一个JSON：{"mode":"tag"或"item","barcode":"455开头的13位条码,读不到则空","code":"吊牌上的款号(字母+数字混合,如AE0ZIA5S,通常是全大写,紧挨CN字样),读不到则空","name":"吊牌上印刷的中文品名,实物照则给出最可能的MUJI商品名","desc":"实物照则描述:品类、男女装或儿童、颜色、材质、版型","keywords":["实物照则给3-5个类目同义词;吊牌照则空数组"]}。注意:条码和款号必须逐字符仔细读;除JSON外不要输出任何其他文字。');
+    const prompt = '你是MUJI无印良品商品识别助手。顾客发来一张照片，可能是商品吊牌/标签（印有款号如AE0ZIA5S、CN字样、455开头条码），也可能是商品实物。仔细看图并只输出一个JSON：{"mode":"tag"或"item","barcode":"455开头的13位条码,读不到则空","code":"吊牌上的款号(字母+数字混合,紧挨CN字样),读不到则空","name":"吊牌上印刷的中文品名,实物照则给出最可能的MUJI商品名","desc":"实物照则描述:品类、人群、颜色、材质、版型","keywords":["实物照则给3-5个类目词;吊牌照则空数组"]}。条码和款号必须逐字符仔细读；除JSON外不要输出任何其他文字。';
+    const desc = await visionCall([{'type': 'image_url', 'image_url': {'url': dataUrl}}, {'type': 'text', 'text': prompt}], '只输出JSON，不要输出任何其他文字。');
     let info = {};
     try { info = JSON.parse(desc.replace(/```json|```/g, '').trim()); } catch (e) {}
     let candidates = [];
-    if (info.barcode && /^\d{13}$/.test(info.barcode) && D.products[info.barcode]) {
-      candidates = [{sku: info.barcode, p: D.products[info.barcode]}];
-      bot.textContent = '✅ 吊牌识别成功（条码 ' + info.barcode + '）';
-    } else if (info.barcode && /^\d{13}$/.test(info.barcode)) {
-      bot.textContent = '读到了条码 ' + info.barcode + '，但这个条码不在商品库里。';
+    let msg = '';
+    // 吊牌：条码精确
+    if (info.barcode && /^\d{13}$/.test(info.barcode)) {
+      if (D.products[info.barcode]) {
+        candidates = [{sku: info.barcode, p: D.products[info.barcode]}];
+        msg = '✅ 吊牌条码识别成功（' + info.barcode + '）';
+      } else msg = '读到条码 ' + info.barcode + '，但不在商品库里。';
     }
-    // 款号匹配（吊牌上印的款号如 AE0ZIA5S）
+    // 吊牌/实物：款号
     if (!candidates.length && info.code) {
       const c = norm(info.code);
       const byCode = Object.entries(D.products).filter(([sku, p]) => p.s && (p.s.toLowerCase() === c || p.s.toLowerCase().startsWith(c) || c.startsWith(p.s.toLowerCase())));
       if (byCode.length) {
         candidates = byCode.map(([sku, p]) => ({sku, p}));
-        bot.textContent = '✅ 款号识别成功（' + info.code + '）';
+        msg = '✅ 款号识别成功（' + info.code + '）';
       }
     }
-    if (!candidates.length && info.name) {
-      const byName = matchProducts(info.name);
-      if (byName.length) { candidates = byName.slice(0, 5); bot.textContent = '按品名匹配：' + info.name; }
-    }
+    // 实物照：描述 → 文本候选 → 以图搜图复核
     if (!candidates.length) {
-      const q = (info.name || '') + ' ' + (info.desc || '') + ' ' + (info.keywords || []).join(' ');
-      // 描述式长文本：拆词后按命中词数排序（两字以上词都算）
-      const toks = [...new Set(q.split(/[｜，,。/、\s]+/).map(norm).filter(w => w.length >= 2))];
-      if (toks.length) {
-        const sc = [];
-        for (const [sku, p] of Object.entries(D.products)) {
-          const field = norm(p.t) + norm(p.c);
-          let n = 0;
-          for (const w of toks) if (field.includes(w)) n++;
-          if (n > 0) sc.push({sku, p, n, len: norm(p.t).length});
-        }
-        sc.sort((a, b) => b.n - a.n || a.len - b.len);
-        candidates = sc.slice(0, 5).map(x => ({sku: x.sku, p: x.p, fuzzy: x.n < Math.ceil(toks.length / 2)}));
+      const toks = [...new Set((((info.name || '') + ' ' + (info.desc || '') + ' ' + (info.keywords || []).join(' '))).split(/[｜，,。/、\s]+/).map(norm).filter(w => w.length >= 2))];
+      let top10 = [];
+      if (info.name) {
+        top10 = matchProducts(info.name);
       }
-      bot.textContent = info.name ? ('识别到：' + info.name + (info.desc ? '｜' + info.desc : '')) : (info.desc || '没能识别出商品，请换张清晰的照片。');
+      if (top10.length < 5 && toks.length) {
+        const extra = rankByTokens(toks, 10);
+        const seen = new Set(top10.map(x => x.sku));
+        for (const x of extra) if (!seen.has(x.sku)) { top10.push(x); seen.add(x.sku); }
+      }
+      top10 = top10.slice(0, 8);
+      msg = '识别到：' + (info.name || '') + (info.desc ? '｜' + info.desc : '') + '（正在以图搜图复核…）';
+      showImgResults(top10.map(x => ({sku: x.sku, p: x.p, fuzzy: true})), msg);
+      if (top10.length >= 2) {
+        const parts = [{'type': 'image_url', 'image_url': {'url': dataUrl}},
+          {'type': 'text', 'text': '第1张是顾客拍摄的商品照片。后面' + top10.length + '张是候选商品图（依次编号2-' + (top10.length + 1) + '）。请对比找出与第1张是同一款/最相似的商品，只输出JSON：{"matches":[{"n":候选编号,"score":0-100相似度}]}，最多给3个，按相似度降序。'}];
+        for (const x of top10) if (x.p.i) parts.push({'type': 'image_url', 'image_url': {'url': x.p.i}});
+        try {
+          const cmp = await visionCall(parts, '只输出JSON。');
+          const mm = JSON.parse(cmp.replace(/```json|```/g, '').trim());
+          const ranked = (mm.matches || []).map(m => top10[(m.n || 1) - 2]).filter(Boolean);
+          if (ranked.length) {
+            candidates = ranked;
+            msg = '✅ 以图搜图完成，按相似度排序：';
+          }
+        } catch (e) { msg = '以图搜图复核失败，以下为文字匹配候选。'; }
+      } else if (!top10.length) {
+        msg = '没能识别出商品，请换张更清晰的照片。';
+      }
     }
-    if (candidates.length) {
-      const d = document.createElement('div');
-      d.className = 'refs';
-      d.style.width = '95%';
-      d.innerHTML = '<b>疑似款（点击选用）：</b><div id="grid" style="margin-top:8px">' +
-        candidates.map(({sku, p, fuzzy}) => `
-        <div class="card">
-          <img src="${p.i || ''}" onerror="this.style.visibility='hidden'" loading="lazy">
-          <div class="bd">
-            <div class="t">${esc(p.t)}${fuzzy ? ' <span style="color:#999;font-size:11px">(模糊匹配)</span>' : ''}</div>
-            <div class="p">¥${p.p}</div>
-            <div class="s">SKU ${sku}</div>
-            <div class="ops">
-              <button class="solid" onclick="pickProduct('${sku}')">选这个</button>
-              <button onclick="window.open('${p.u || ''}','_blank')">官网</button>
-            </div>
-          </div>
-        </div>`).join('') + '</div>';
-      chat.appendChild(d);
-    }
+    showImgResults(candidates, msg);
   } catch (err) {
-    bot.textContent = '识别出错：' + err.message;
+    showImgResults([], '识别出错：' + err.message);
   }
-  bot.classList.remove('typing');
-  status.textContent = '📷 [发送了一张图片]';
-  chat.scrollTop = chat.scrollHeight;
-}
-function pickProduct(sku) {
-  const p = D.products[sku];
-  ctxProduct = {sku, ...p};
-  renderCtx();
-  byId('chatSec').scrollIntoView({behavior: 'smooth'});
+  tip.style.display = 'none';
 }
 
-/* ================== 初始化 ================== */
+/* ================== 事件绑定 ================== */
+byId('q').addEventListener('input', search);
 document.addEventListener('paste', e => {
   const items = (e.clipboardData || {}).items || [];
   for (const it of items) {
@@ -526,9 +420,13 @@ document.addEventListener('paste', e => {
     }
   }
 });
-byId('q').addEventListener('input', search);
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = [...(e.dataTransfer.files || [])].find(x => x.type.startsWith('image/'));
+  if (f) handleImage(f);
+});
+
+/* ================== 初始化 ================== */
 recordVisit();
 checkAcl().then(s => { if (s === 'blocked') showBlock(); });
-</script>
-</body>
-</html>
