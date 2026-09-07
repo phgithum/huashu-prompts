@@ -197,6 +197,15 @@ function sizeText(sku) {
 }
 
 /* ================== 商品匹配 ================== */
+// 分类同义词：搜索词 → 可匹配的标题/末级分类词（避免命中分类树干造成大面积误配）
+const CAT_SYN = {
+  '睡衣': ['睡衣', '家居服', '睡裙'],
+  '家居服': ['家居服', '睡衣'],
+  '内裤': ['内裤'],
+  '内衣': ['内衣', '内裤', '背心'],
+  '袜子': ['袜'],
+  'T恤': ['t', 't恤'],
+};
 function matchProducts(query) {
   const q = norm(query);
   if (!q) return [];
@@ -213,8 +222,9 @@ function matchProducts(query) {
       if (p.s.toLowerCase() === q) { scored.push({sku, p, w: 100}); continue; }
       if (p.s.toLowerCase().startsWith(q) || q.startsWith(p.s.toLowerCase())) { scored.push({sku, p, w: 85}); continue; }
     }
-    const t = norm(p.t), c = norm(p.c);
-    const field = t + c;
+    const t = norm(p.t);
+    const cLeaf = norm((p.c || '').split('/').pop());  // 只用末级分类匹配：中间树干（如“睡衣”枝挂满内衣）不能算
+    const field = t + cLeaf;
     if (t.length >= 3 && q.includes(t)) { scored.push({sku, p, w: 60}); continue; }
     let andMode = words.length > 1;
     if (andMode) {
@@ -223,8 +233,11 @@ function matchProducts(query) {
     }
     const w0 = words[0] || '';
     if (!w0) continue;  // 单字查询走下方专用逻辑，绝不能用空字符串匹配（空串包含于一切）
-    if (field.includes(w0)) {
-      scored.push({sku, p, w: 30 + (t.startsWith(w0) ? 8 : 0)});
+    const vars = (CAT_SYN[w0] || [w0]);  // 同义词扩展：搜“睡衣”连“家居服/睡裙”，但不匹配内衣树干
+    const inT = vars.some(v => t.includes(v));
+    const inC = vars.some(v => cLeaf.includes(v));
+    if (inT || inC) {
+      scored.push({sku, p, w: inT ? 30 + (t.startsWith(w0) ? 8 : 0) : 15});  // 标题命中 > 分类命中
     } else if (w0.length >= 6) {
       const grams = bigrams(w0);
       const hit = grams.filter(g => field.includes(g)).length;
