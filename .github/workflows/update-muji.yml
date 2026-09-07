@@ -3,7 +3,12 @@ name: update-muji-data
 on:
   schedule:
     - cron: '0 2 * * 1'   # 每周一 02:00 UTC（北京 10:00）
-  workflow_dispatch:        # 支持手动触发
+  workflow_dispatch:
+    inputs:
+      skip_scrape:
+        description: '跳过抓取，只用仓库现有数据同步知识库'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -25,6 +30,7 @@ jobs:
           python -m playwright install chromium --with-deps
 
       - name: 抓取官网商品（含断点续抓，约1~2小时）
+        if: ${{ inputs.skip_scrape != true }}
         run: python muji_scraper.py "https://www.muji.com.cn/cn/store/commodities" --out-dir .
 
       - name: 生成网页数据（含官网链接，直接写入 muji-chat/data.js）
