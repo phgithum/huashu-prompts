@@ -100,7 +100,7 @@ MAX_RETRIES = 3                # 失败重试次数
 BACKOFF_BASE = 1.0             # 指数退避基数：1s、2s、4s
 DELAY_MIN, DELAY_MAX = 0.5, 1.5  # 请求间随机延时（秒）
 
-CSV_COLUMNS = ["title", "price", "sku", "images", "description", "category", "url"]
+CSV_COLUMNS = ["title", "price", "sku", "sizes", "colors", "origin", "images", "description", "category", "url"]
 
 
 def log(msg: str) -> None:
@@ -230,6 +230,7 @@ def list_products_api(client: MujiClient, cate_id=None, cate_type="all",
     max_items 不为空时，凑够即提前停止翻页（避免多余请求）。
     """
     items, page = [], 1
+    page_fail = 0  # 连续翻页失败计数：单页失败跳过继续，不再让整个脚本崩掉
     while True:
         params = {
             "currentPage": page,
@@ -242,7 +243,18 @@ def list_products_api(client: MujiClient, cate_id=None, cate_type="all",
             "deliveryType": 0,
             "provinceCd": "310000",  # 上海市，仅用于查询在售状态
         }
-        data = client.api_get("/commodities", params)
+        try:
+            data = client.api_get("/commodities", params)
+            page_fail = 0
+        except Exception as e:
+            page_fail += 1
+            log(f"  !! 列表第 {page} 页抓取失败（{e}），跳过继续")
+            if page_fail >= 5:
+                log(f"  !! 连续 {page_fail} 页失败，终止翻页。已获取 {len(items)} 条（可能有缺页，建议重跑补齐）")
+                break
+            page += 1
+            polite_sleep(2, 4)
+            continue
         meta = data.get("meta") or {}
         batch = data.get("list") or []
         if not batch:
@@ -312,6 +324,22 @@ def normalize(d: dict, spu_id, sel_line_cd=None, cate_name=None, category_map=No
     else:
         category = ""
 
+    # 尺码/颜色/SKU 明细：sizeNames 总尺码表 + skus 逐条（尺码/颜色/条码/价格/库存）
+    sizes = [s for s in (d.get("sizeNames") or []) if s]
+    skus = []
+    for s in (d.get("skus") or []):
+        skus.append({
+            "skuCd": s.get("skuCd") or "",       # 商品条码
+            "colorName": s.get("colorName") or "",
+            "sizeName": s.get("sizeName") or "",  # 尺码
+            "price": s.get("mktPrice") if s.get("mktPrice") is not None else s.get("price"),
+            "stock": s.get("stock"),
+        })
+    size_specs = d.get("sizeSpecs") or ""
+    size_picture = d.get("sizePicture") or ""
+    color_names = [c for c in (d.get("colorNames") or []) if c]
+    origin = (d.get("originCountry") or "").strip()
+
     return {
         "title": title,
         "price": price if price is not None else "",
@@ -321,6 +349,12 @@ def normalize(d: dict, spu_id, sel_line_cd=None, cate_name=None, category_map=No
         "category": category,
         "url": f"{SITE_BASE}/cn/store/commodity/{spu_id}",
         "_sel_line_cd": sel_line_cd or "",
+        "sizes": sizes,               # 尺码列表
+        "colors": color_names,        # 颜色列表
+        "skus": skus,                 # SKU 明细（尺码×颜色×条码×价格×库存）
+        "sizeSpecs": size_specs,      # 尺寸规格说明
+        "sizePicture": size_picture,  # 尺码对照图
+        "origin": origin,             # 产地
     }
 
 
@@ -476,6 +510,8 @@ def _write_csv(rows, path):
         for p in rows:
             row = dict(p)
             row["images"] = ";".join(p.get("images") or [])
+            row["sizes"] = ";".join(p.get("sizes") or [])
+            row["colors"] = ";".join(p.get("colors") or [])
             writer.writerow({k: row.get(k, "") for k in CSV_COLUMNS})
 
 
@@ -636,6 +672,9 @@ def run(args):
 
     if args.limit:
         targets = targets[:args.limit]
+    # 按商品 id 去重（不同入口/分类可能出现重叠，防止重复抓取浪费配额）
+    _seen = set()
+    targets = [t for t in targets if not (str(t[0]) in _seen or _seen.add(str(t[0])))]
     log(f"待抓取商品共 {len(targets)} 个")
 
     # 2. 断点续抓：跳过已完成商品
@@ -675,6 +714,28 @@ def run(args):
             save_progress(out_dir, done, products)
             log(f"  -- 已落盘 {len(products)} 条（断点保护）--")
 
+    # 2.5 失败自动补抓：把仍未完成的商品串行慢速重试一轮（大幅减少缺品）
+    retry = [t for t in targets if str(t[0]) not in done]
+    if retry:
+        log(f"自动补抓 {len(retry)} 个失败商品（串行慢速）...")
+        for spu_id, sel_line_cd, cate_name in retry:
+            detail_url = f"{SITE_BASE}/cn/store/commodity/{spu_id}"
+            try:
+                polite_sleep()
+                try:
+                    rec = fetch_detail_api(client, spu_id, sel_line_cd, cate_name, category_map)
+                except RuntimeError as e:
+                    if args.no_playwright:
+                        raise
+                    rec = fetch_detail_playwright(detail_url)
+                products.append(rec)
+                done[str(spu_id)] = True
+                ok_cnt += 1
+                fail_cnt = max(0, fail_cnt - 1)
+                log(f"  ✔ 补抓成功 spuId={spu_id}")
+            except Exception as e:
+                log(f"  ✘ 补抓仍失败 spuId={spu_id}：{e}")
+
     # 3. 收尾：最终产出与失败清单提示
     save_outputs(products, out_dir)
     save_progress(out_dir, done, products)
@@ -694,7 +755,7 @@ def main():
         description="MUJI（muji.com.cn）商品详情抓取脚本（仅限个人学习/研究）")
     parser.add_argument("url", help="列表页或详情页 URL")
     parser.add_argument("--limit", type=int, default=None, help="最多抓取 N 个商品")
-    parser.add_argument("--per-page", type=int, default=20, help="列表分页大小（默认20，最大50）")
+    parser.add_argument("--per-page", type=int, default=50, help="列表分页大小（默认50=接口最大，减少翻页次数）")
     parser.add_argument("--out-dir", default=".", help="产出目录（默认当前目录）")
     parser.add_argument("--no-playwright", action="store_true", help="禁用 Playwright 兜底")
     parser.add_argument("--fast", action="store_true",
