@@ -62,6 +62,16 @@ for p in products:
     }
     if sku_code.get(p['sku']):
         prods[p['sku']]['s'] = sku_code[p['sku']]
+    # 尺码/颜色/产地/尺码表（v0.2 新增字段，旧页面会自动忽略）
+    if p.get('sizes'):
+        prods[p['sku']]['z'] = p['sizes']
+    if p.get('sizeSpecs'):
+        prods[p['sku']]['tb'] = p['sizeSpecs']
+    if p.get('origin'):
+        prods[p['sku']]['o'] = p['origin']
+    if p.get('skus'):
+        # 紧凑 SKU 表：[条码, 颜色, 尺码, 价格]
+        prods[p['sku']]['v'] = [[s.get('skuCd', ''), s.get('colorName', ''), s.get('sizeName', ''), s.get('price')] for s in p['skus']]
 print('款号映射:', len(sku_code))
 sz = {}
 for sku, r in sizes.items():
