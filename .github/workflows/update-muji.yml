@@ -35,6 +35,25 @@ jobs:
 
       - name: 生成网页数据（含官网链接，直接写入 muji-chat/data.js）
         run: python build_web_data.py
+      - name: 同步 muji-chat 到 MUJI 独立仓库
+        env:
+          TOKEN: ${{ secrets.MUJI_PUSH_TOKEN }}
+        run: |
+          python -c "
+          import base64,json,urllib.request,os
+          H={'Authorization':'Bearer '+os.environ['TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json','User-Agent':'kb'}
+          for f in ['index.html','data.js','acl.json','admin.html']:
+              data=open(os.path.join('muji-chat',f),'rb').read()
+              url=f'https://api.github.com/repos/phgithum/MUJI/contents/{f}'
+              sha=None
+              try:
+                  j=json.loads(urllib.request.urlopen(urllib.request.Request(url+'?ref=main',headers=H)).read()); sha=j['sha']
+              except Exception: pass
+              body={'message':'weekly sync','branch':'main','content':base64.b64encode(data).decode()}
+              if sha: body['sha']=sha
+              req=urllib.request.Request(url,data=json.dumps(body).encode(),method='PUT',headers=H)
+              print(f, urllib.request.urlopen(req).status)
+          "
 
       - name: 生成知识文档并同步智谱知识库
         env:
