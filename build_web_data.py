@@ -17,12 +17,17 @@ if os.path.exists(sz_path):
 # 款号映射（来自赤兔知识标题"商品名——款号"）
 chitu = {}
 csz = None
-for base in [r'C:\Users\23395\Downloads', r'C:\Users\23395\Desktop']:
-    for f in os.listdir(base):
-        if f.startswith('chitu-knowledge') and f.endswith('.json'):
-            p = os.path.join(base, f)
-            if csz is None or os.path.getsize(p) > os.path.getsize(csz):
-                csz = p
+for base in ['.', r'C:\Users\23395\Downloads', r'C:\Users\23395\Desktop']:
+    try:
+        if not os.path.isdir(base):
+            continue
+        for f in os.listdir(base):
+            if f.startswith('chitu-knowledge') and f.endswith('.json'):
+                p = os.path.join(base, f)
+                if csz is None or os.path.getsize(p) > os.path.getsize(csz):
+                    csz = p
+    except Exception:
+        pass
 try:
     cd = json.load(open(csz, encoding='utf-8'))
     for det in cd.get('details', []):
