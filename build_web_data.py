@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """生成网页版数据文件：商品索引（含官网链接）+ 尺码数据"""
-import io, os, json, re, sys
+import io, os, json, re, sys, time
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 HERE = os.path.dirname(os.path.abspath(__file__))
 products = json.load(open(os.path.join(HERE, 'muji_products.json'), encoding='utf-8'))
@@ -87,4 +87,12 @@ for sku, r in sizes.items():
 payload = 'window.MUJI_DATA=' + json.dumps({'products': prods, 'sizes': sz}, ensure_ascii=False, separators=(',', ':')) + ';'
 out = os.path.join(HERE, 'muji-chat', 'data.js')
 open(out, 'w', encoding='utf-8').write(payload)
+# 自动给 index.html 的 data.js 引用换版本号，强制浏览器拉新数据
+idx = os.path.join(HERE, 'muji-chat', 'index.html')
+if os.path.exists(idx):
+    html = open(idx, encoding='utf-8').read()
+    html2 = re.sub(r'data\.js\?v=[0-9a-z]+', 'data.js?v=' + time.strftime('%Y%m%d%H%M'), html)
+    if html2 != html:
+        open(idx, 'w', encoding='utf-8').write(html2)
+        print('index.html 版本号已更新')
 print('products:', len(prods), 'sizes:', len(sz), '| size:', round(os.path.getsize(out) / 1048576, 2), 'MB')
