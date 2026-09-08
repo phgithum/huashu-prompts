@@ -1280,5 +1280,37 @@ loadMammoth().catch(()=>{});
   else{setStatus(false,'未连接 · 请填写 API Key');openSet();}
 })();
 </script>
+<div id="frontGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99998;display:flex;align-items:center;justify-content:center">
+<div style="background:#fff;border:1px solid #e5e8ef;border-radius:12px;padding:36px 32px;width:330px;box-shadow:0 6px 24px rgba(0,0,0,.06)">
+<h2 style="font-size:18px;text-align:center;margin-bottom:4px">🔐 知识库检索台</h2>
+<p style="font-size:12px;color:#667;text-align:center;margin-bottom:20px">请输入账户密码使用</p>
+<div id="fgErr" style="color:#d33;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
+<input id="fgU" placeholder="账户" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none;box-sizing:border-box">
+<input id="fgP" type="password" placeholder="密码" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;box-sizing:border-box">
+<button onclick="fgLogin()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2f6fed;color:#fff;font-size:14px;cursor:pointer">进 入</button>
+</div></div>
+<script>
+/* 前台门禁：签发账户（需勾选本站权限）或超管可用；聚合后台登录后自动放行 */
+var FG_NEED="kb", FG_LIST=null, FG_LS="front_gate_kb";
+(function(){
+  var ok=false;
+  try{
+    ok = sessionStorage.getItem("admin_auth")==="1" || sessionStorage.getItem(FG_LS)==="1";
+  }catch(e){}
+  if(ok){ var g=document.getElementById("frontGate"); if(g) g.remove(); return; }
+  fetch("https://raw.githubusercontent.com/phgithum/admin-console/main/accounts.json?t="+Date.now())
+    .then(function(r){return r.ok?r.json():[]}).catch(function(){return[]})
+    .then(function(j){FG_LIST=j||[];});
+  document.getElementById("fgP").addEventListener("keydown",function(e){ if(e.key==="Enter") fgLogin(); });
+})();
+function fgLogin(){
+  var u=document.getElementById("fgU").value.trim(), p=document.getElementById("fgP").value;
+  function pass(){ try{sessionStorage.setItem(FG_LS,"1")}catch(e){} var g=document.getElementById("frontGate"); if(g) g.remove(); }
+  if(u==="panhao" && p==="panhao123"){ pass(); return; }
+  var hit=(FG_LIST||[]).filter(function(a){return a.u===u && a.p===p && a[FG_NEED]})[0];
+  if(hit){ pass(); return; }
+  document.getElementById("fgErr").textContent="账户或密码错误（或无本站权限）";
+}
+</script>
 </body>
 </html>
