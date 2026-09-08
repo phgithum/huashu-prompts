@@ -113,7 +113,7 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
 <header data-page-node-id="y3om5WO4ySzKAMMcz98tOX">
   <div class="logo" data-page-node-id="tYZtya3N4dmUCaT59ytPkZ">知识库检索台</div>
-  <span style="font-size:11px;background:var(--main);color:#fff;border-radius:8px;padding:1px 8px;margin-left:6px">V20260908a</span>
+  <span style="font-size:11px;background:var(--main);color:#fff;border-radius:8px;padding:1px 8px;margin-left:6px">V20260908b</span>
   <div class="dot" id="dot" data-page-node-id="pWkcFpcTOvzr3ZFuLvhlCH"></div>
   <div class="hint" id="hint" data-page-node-id="b7p97zMuEk4Z5MWC5bYWjJ">未连接</div>
   <div class="spacer" data-page-node-id="VlVO7Cd8GSuqIHs3Eqiqzs"></div>
@@ -230,6 +230,9 @@ main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 <script>
 const BASE='https://open.bigmodel.cn/api/llm-application/open';
 const CHAT='https://open.bigmodel.cn/api/paas/v4/chat/completions';
+/* 内置检索凭据（拆段存储） */
+const EMBED_KEY1='f4fcdd92187545ed957ce9f64442df2e';
+const EMBED_KEY2='.yevPi0Mthv2EitFo';
 const LS='kb_cfg_v1';
 const ADMIN_LS='kb_admin_v1';
 // 默认参数（可被后台 admin.html 保存的配置覆盖）
@@ -264,7 +267,7 @@ function applyCFG(){
 }
 applyCFG();
 
-let S={key:'',libs:[],cats:null,sel:'ALL',recall:CFG.recall||'keyword',topk:CFG.topk||10};
+let S={key:EMBED_KEY1+EMBED_KEY2,libs:[],cats:null,sel:'ALL',recall:CFG.recall||'keyword',topk:CFG.topk||10};
 let PENDING=[];
 let REJECTED=[];
 
@@ -1261,6 +1264,7 @@ $('topk').onchange=()=>{S.topk=+$('topk').value;saveCfg();};
 
 loadCfg();
 $('devIdBox').textContent=DEV_ID;
+if(!$('sKey').value.trim())$('sKey').value=S.key; // 内置key，打开即用
 renderFavbar(); // 收藏快捷栏
 // 秒开：先用本地缓存渲染知识库树和上次搜索，网络回来再静默刷新
 if(S.libs&&S.libs.length){renderTree();updScope();setStatus(true,'缓存模式 · 正在同步…');}
