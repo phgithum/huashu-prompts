@@ -1,11 +1,1432 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=./huashu_assistant.html">
-<title>客服话术小助手</title>
+<html lang="zh-CN" data-page-node-id="gkNloZikvNwUg73yGutjmo">
+<head data-page-node-id="LmuIOgneLmVprcHGBR0pn9">
+<meta charset="utf-8" data-page-node-id="HmPB8zhLZwFZoGJWS2L6JK">
+<meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="1DeVBmC4QrLYSJSg8hWCl5">
+<title>知识库检索台</title>
+<style>
+:root{
+  --bg:#f5f6f8; --panel:#ffffff; --line:#e5e7eb; --line2:#eef0f3;
+  --tx:#1f2329; --tx2:#5f6672; --tx3:#98a0ad;
+  --main:#1677ff; --main-bg:#e8f2ff; --ok:#12a150; --warn:#d98200; --err:#d93026;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden}
+button{font-family:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--tx);padding:6px 14px;border-radius:6px}
+button:hover{border-color:#c9ced6;background:#fafbfc}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.pri{background:var(--main);border-color:var(--main);color:#fff}
+button.pri:hover{background:#0e63d6;border-color:#0e63d6}
+input,select,textarea{font-family:inherit;font-size:13px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;color:var(--tx);background:#fff;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--main)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#d5d9e0;border-radius:4px}
+
+header{height:52px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:12px}
+.logo{font-size:15px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:#c9ced6}
+.dot.on{background:var(--ok)}
+.hint{font-size:12px;color:var(--tx3)}
+.spacer{flex:1}
+
+.wrap{display:flex;height:calc(100vh - 52px)}
+aside{width:250px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.side-h{padding:12px 14px 8px;font-size:12px;color:var(--tx3);display:flex;align-items:center;justify-content:space-between}
+.side-b{flex:1;overflow-y:auto;padding:0 8px 12px}
+.grp{margin-bottom:4px}
+.grp-t{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--tx2)}
+.grp-t:hover{background:#f4f6f8}
+.grp-t.sel{background:var(--main-bg);color:var(--main);font-weight:500}
+.grp-n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:11px;color:var(--tx3);background:#f0f2f5;padding:1px 6px;border-radius:9px}
+.grp-t.sel .badge{background:#d6e8ff;color:var(--main)}
+.lib{display:flex;align-items:center;gap:7px;padding:6px 8px 6px 22px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--tx2)}
+.lib:hover{background:#f4f6f8}
+.lib.sel{background:var(--main-bg);color:var(--main)}
+.lib span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-f{padding:8px;border-top:1px solid var(--line2)}
+
+main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.searchbar{padding:14px 20px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.searchbar input{font-size:14px;padding:9px 12px}
+.searchbar select{width:auto;min-width:110px}
+.scope{font-size:12px;color:var(--tx3);white-space:nowrap}
+.list{flex:1;overflow-y:auto;padding:16px 20px 40px}
+.empty{text-align:center;color:var(--tx3);padding:70px 20px;font-size:13px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px 15px;margin-bottom:10px}
+.card:hover{border-color:#cfd6de}
+.c-h{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+.c-idx{font-size:12px;color:var(--tx3);min-width:18px}
+.c-doc{font-size:13px;font-weight:600;color:var(--tx)}
+.c-kb{font-size:11px;color:var(--tx2);background:#f0f2f5;padding:1px 7px;border-radius:4px}
+.c-sc{font-size:11px;color:var(--tx3);margin-left:auto}
+.c-tx{font-size:13px;color:var(--tx2);line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.c-tx em{color:var(--main);font-style:normal;background:#fff3c4;border-radius:2px;padding:0 1px}
+.c-f{margin-top:9px;display:flex;gap:8px;align-items:center}
+.c-f a{font-size:12px;color:var(--main);text-decoration:none;border:1px solid #cfe2ff;background:#f5f9ff;padding:3px 10px;border-radius:5px}
+.c-f a:hover{background:var(--main-bg)}
+.c-ctx{font-size:12px;color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);display:none}
+.c-ctx.on{display:block}
+
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.35);display:none;z-index:50}
+.mask.on{display:block}
+.modal{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:10px;width:520px;max-height:82vh;overflow-y:auto;z-index:51;display:none;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal.on{display:block}
+.m-h{padding:15px 18px;border-bottom:1px solid var(--line2);font-size:14px;font-weight:600;display:flex;align-items:center}
+.m-h button{margin-left:auto;border:none;background:none;font-size:18px;color:var(--tx3);padding:0 4px}
+.m-b{padding:16px 18px}
+.m-f{padding:12px 18px;border-top:1px solid var(--line2);display:flex;gap:8px;justify-content:flex-end}
+.row{margin-bottom:13px}
+.row label{display:block;font-size:12px;color:var(--tx2);margin-bottom:5px}
+.row .tip{font-size:11px;color:var(--tx3);margin-top:4px;line-height:1.5}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:26px;text-align:center;color:var(--tx3);font-size:13px;background:#fafbfc;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--main);background:var(--main-bg);color:var(--main)}
+.files{margin-top:10px;font-size:12px;color:var(--tx2);max-height:130px;overflow-y:auto}
+.files div{padding:4px 0;border-bottom:1px solid var(--line2)}
+.log{font-size:12px;color:var(--tx2);background:#fafbfc;border:1px solid var(--line2);border-radius:6px;padding:9px 11px;max-height:150px;overflow-y:auto;white-space:pre-wrap;line-height:1.7}
+.log .ok{color:var(--ok)} .log .er{color:var(--err)} .log .wn{color:var(--warn)}
+.chk{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.chk label{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--tx2);cursor:pointer}
+.chk input{width:auto}
+
+/* 搜索联想下拉 */
+.sbar{position:relative;flex:1}
+.sbar input{width:100%}
+.sug{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:40;display:none;max-height:280px;overflow-y:auto}
+.sug.on{display:block}
+.sug>div{padding:7px 12px;font-size:13px;cursor:pointer;display:flex;gap:8px;align-items:center;color:var(--tx)}
+.sug>div:hover,.sug>div.act{background:var(--main-bg)}
+.sug .s-tag{font-size:11px;color:var(--tx3);margin-left:auto;flex:none}
+.sug .s-hl{color:var(--main);font-weight:600}
+/* 收藏星标 */
+.star{border:none;background:none;font-size:17px;line-height:1;cursor:pointer;padding:2px 3px;color:#d9a400;flex:none}
+.star:hover{transform:scale(1.15)}
+.favbar{display:flex;gap:6px;align-items:center;padding:7px 20px;background:#fffdf5;border-bottom:1px solid #f3e6b8;font-size:12px;color:var(--tx2);flex-wrap:wrap}
+.favbar .fv{border:1px solid #eadfae;background:#fffef8;border-radius:14px;padding:2px 10px;cursor:pointer;font-size:12px;color:var(--tx)}
+.favbar .fv:hover{border-color:var(--main);color:var(--main)}
+.favbar .fv-x{color:var(--tx3);margin-left:4px}
+.favbar .fv-x:hover{color:var(--err)}
+</style>
 </head>
-<body style="font-family:sans-serif;text-align:center;padding-top:80px;color:#555;">
-正在跳转到 <a href="./huashu_assistant.html">客服话术小助手</a>…
+<body data-page-node-id="9jljvZvX2QEgjmX4DsvOHJ">
+
+<header data-page-node-id="y3om5WO4ySzKAMMcz98tOX">
+  <div class="logo" data-page-node-id="tYZtya3N4dmUCaT59ytPkZ">知识库检索台</div>
+  <span style="font-size:11px;background:var(--main);color:#fff;border-radius:8px;padding:1px 8px;margin-left:6px">V20260908c</span>
+  <div class="dot" id="dot" data-page-node-id="pWkcFpcTOvzr3ZFuLvhlCH"></div>
+  <div class="hint" id="hint" data-page-node-id="b7p97zMuEk4Z5MWC5bYWjJ">未连接</div>
+  <div class="spacer" data-page-node-id="VlVO7Cd8GSuqIHs3Eqiqzs"></div>
+  <button onclick="openUpload()" data-page-node-id="bZRvU7rGNywxxjLP6xBNJr">上传知识</button>
+  <button onclick="openSet()" data-page-node-id="W0srroshcWDIXEIUA8knLF">设置</button>
+</header>
+
+<div class="wrap" data-page-node-id="e44gHWOmu3dJYpbcI0yN6T">
+  <aside data-page-node-id="Bk8ElCjXjqBJEcjnNgb2Qz">
+    <div class="side-h" data-page-node-id="FGPC4eSTWKFEaCHPRDDQZC">
+      <span data-page-node-id="LfoxkDAl9GjOnP4u9v0YFn">检索范围</span>
+      <button style="padding:2px 8px;font-size:11px" onclick="autoTree()" id="catBtn" data-page-node-id="EPOM7rtxcr688IBMxHGMEU">AI 目录树</button>
+    </div>
+    <div class="side-b" id="tree" data-page-node-id="TjtS0G1NZRTsruLJUHrkvW"></div>
+    <div class="side-f" data-page-node-id="SskMDoPlknhTTaCKqVs3kp">
+      <button style="width:100%" onclick="loadLibs()" data-page-node-id="t81tGq6mBlui0dmH82cEpn">刷新知识库</button>
+    </div>
+  </aside>
+
+  <main data-page-node-id="lk68A47b8jSLFFJ2qNjPqP">
+    <div class="searchbar" data-page-node-id="8lbqgVPRkj1JUBhM0CGper">
+      <span class="sbar"><input id="q" placeholder="输入问题或关键词，回车检索" onkeydown="sugKey(event)" oninput="sugInput()" data-page-node-id="gfl38WlijGBwKeqZUxMfUi"><div class="sug" id="sug"></div></span>
+      <select id="recall" data-page-node-id="wIz500F7I8XDAC6e7t1pjE">
+        <option value="keyword" data-page-node-id="6VB0IwBLlfw3qr4Tikx6oW">关键词检索</option>
+        <option value="mixed" data-page-node-id="UkVfxRawGAV0G7HYLEWQCE">混合检索</option>
+        <option value="embedding" data-page-node-id="xtbVhXsnEWYHfEz0Ewi2Mx">语义检索</option>
+      </select>
+      <select id="topk" data-page-node-id="OWHVOG4YR009DW5o1xPnIf">
+        <option value="5" data-page-node-id="B6P1lDLeF6AW8cwCeWFhB2">5 条</option>
+        <option value="10" selected data-page-node-id="iwEGVG9SThChywlAzSA3Hk">10 条</option>
+        <option value="20" data-page-node-id="MwzsbIAMIbfUECD0s204KY">20 条</option>
+      </select>
+      <button onclick="showFavs()" title="查看我收藏的话术">⭐ 收藏</button>
+      <button class="pri" onclick="doSearch()" id="btn" data-page-node-id="KfVtuOmw2TIFyv8geIjGMr">检索</button>
+    </div>
+    <div class="scope" id="scope" style="padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)" data-page-node-id="qo2U5KJImzhZJd2QCg2iL8"></div>
+    <div class="favbar" id="favbar" style="display:none"></div>
+    <div class="list" id="list" data-page-node-id="GPh9etoWWErOyI49DWYnD6">
+      <div class="empty" data-page-node-id="0qqVw3OJNvxSe4Ls38MDhj">在右侧选择知识库，然后输入关键词开始检索</div>
+    </div>
+  </main>
+</div>
+
+<div class="mask" id="mask" onclick="closeAll()" data-page-node-id="NL8Ezboe4osz4n1dATpCi0"></div>
+
+<div class="modal" id="mFull" style="width:min(920px,94vw);height:min(88vh,900px)">
+  <div class="m-h"><span id="fullTitle">查看全文</span><button onclick="closeAll()">&times;</button></div>
+  <div class="m-b" style="height:calc(100% - 52px);padding:0;display:flex;flex-direction:column;overflow:hidden">
+    <div style="display:flex;gap:6px;padding:7px 10px;border-bottom:1px solid var(--line2);align-items:center;flex:none;background:#fff;flex-wrap:wrap">
+      <input id="docFind" placeholder="在本文档中搜索…" style="flex:1;min-width:120px" onkeydown="if(event.key==='Enter')docFindNext(1)">
+      <button style="padding:4px 10px" onclick="docFindNext(-1)" title="上一个">↑</button>
+      <button style="padding:4px 10px" onclick="docFindNext(1)" title="下一个">↓</button>
+      <input id="docAsk" placeholder="问 AI：这份文档里…？" style="flex:1.4;min-width:160px" onkeydown="if(event.key==='Enter')aiAsk()">
+      <button style="padding:4px 12px;background:var(--main);color:#fff;border:0" onclick="aiAsk(this)">AI 问答</button>
+    </div>
+    <div id="fullBody" style="width:100%;flex:1;overflow:auto;background:#fff"></div>
+  </div>
+</div>
+
+<div class="modal" id="mSet" data-page-node-id="h5vZ42ZvJXGMoIlSYuG4x4">
+  <div class="m-h" data-page-node-id="YBoDzCdIExQMSjhmyvp8YO">设置<button onclick="closeAll()" data-page-node-id="EWGZAh4QN7Jq8js1zqcWEr">&times;</button></div>
+  <div class="m-b" data-page-node-id="fuRl0HlpCCWdTpnHKeyi5D">
+    <div class="row" data-page-node-id="bUKspEcaYQChOtCaUszOP8">
+      <label data-page-node-id="Ur0qdvz6xt6a9hxlsunv04">智谱 API Key</label>
+      <input type="password" id="sKey" placeholder="粘贴 bigmodel.cn 的 API Key" data-page-node-id="0lrZT3RNbUSdQKPNlqm22r">
+      <div class="tip" data-page-node-id="nYq8NLYGToYO2fOSzaN0Qa">只保存在本机浏览器，不会上传到任何地方，也不会写进网页代码。</div>
+    </div>
+    <div class="row" data-page-node-id="iFjHz6sBjI89fTF7cJMwJp">
+      <label data-page-node-id="4EpaoUMrKExRdOK83yvSVK">本机设备码</label>
+      <div class="tip" style="font-size:12px;color:var(--tx)"><b style="user-select:all" id="devIdBox"></b> <button style="padding:2px 10px;font-size:12px" onclick="navigator.clipboard&&navigator.clipboard.writeText(DEV_ID)">复制</button></div>
+      <div class="tip">同一台电脑的同一个浏览器永远是同一个码，清浏览器缓存或用无痕模式会变新码。管理员可在后台「设备管理」中授权。</div>
+    </div>
+    <div class="row" data-page-node-id="iFjHz6sBjI89fTF7cJMwJp">
+      <label data-page-node-id="4EpaoUMrKExRdOK83yvSVK">高级参数</label>
+      <div class="tip" data-page-node-id="BVUTufM1DXGvhEG3EGIoqh">知识库范围、格式白名单、大小上限、切片方式、AI 模型等参数由管理员在专用后台统一管理（后台不在前台提供入口）。</div>
+    </div>
+  </div>
+  <div class="m-f" data-page-node-id="UzWrO4BmdSNfbP3rvzHwxU">
+    <button onclick="testKey()" data-page-node-id="creCd6EEAW5891yztZRmFT">测试连接</button>
+    <button onclick="clearCat()" data-page-node-id="SxQ8FD6LRdjsnhuBnaWVaD">清除分类</button>
+    <button onclick="clearFileCache(this)" title="清掉本地缓存的文档文件，下次打开会重新下载">清文件缓存</button>
+    <button class="pri" onclick="saveSet()" data-page-node-id="i8qDk1dZvXHZKM5gjg5n2c">保存</button>
+  </div>
+</div>
+
+<div class="modal" id="mUp" data-page-node-id="ddqfFLpFD90HjQugHllwEi">
+  <div class="m-h" data-page-node-id="id2SuFOgdZqg3ih1sI4ApV">上传知识<button onclick="closeAll()" data-page-node-id="k6UezYzXscNxJVOthFEPsL">&times;</button></div>
+  <div class="m-b" data-page-node-id="eWrTLa0wjTJ6oN6Gz7aFdC">
+    <div class="row" data-page-node-id="0FK1LlV65OvCUH6fu9nHCq">
+      <label data-page-node-id="GlNCpziAF60oDNRACQpbbK">目标知识库</label>
+      <select id="uKb" data-page-node-id="heW5fMNA7HdgLXTdlZF3QP"></select>
+    </div>
+    <div class="row" data-page-node-id="OrzwseEsQYlYR6oPzBjKIh">
+      <label data-page-node-id="StQOna4NYQ8Xaw8mC5nyOB">上传文件</label>
+      <div class="drop" id="drop" onclick="document.getElementById('uFile').click()" data-page-node-id="phvGBRfWXtWqRZ9E5GYxw2">
+        点击选择，或把文件拖到这里<br data-page-node-id="wByzx1JRyfSfzCL60j6h3N">支持 md / txt / pdf / doc / docx / ppt / pptx / xls / xlsx / csv，单个不超过设置里的大小上限（默认 20MB）<br>图片支持 jpg / jpeg / png / webp，单张不超过 5MB；视频、音频会被自动拦截
+      </div>
+      <input type="file" id="uFile" multiple style="display:none" onchange="pickFiles(this.files)" data-page-node-id="0UhySwW18NqWBHz0JcrDFy">
+      <div class="files" id="uFiles" data-page-node-id="2KgDu1yFs7ygiBE1gvqK8Z"></div>
+    </div>
+    <div class="row" data-page-node-id="mnZeLmCaZlTyXXEWPT8KmQ">
+      <label data-page-node-id="3M5YZNnoWhxud1buO5iJI0">或粘贴网页链接（每行一个）</label>
+      <textarea id="uUrl" rows="3" placeholder="https://..."></textarea>
+      <div class="tip" data-page-node-id="CezlgtgSj4P1uSBoJl3Fwr">用链接收录的文档，检索结果能直接跳回原网页。</div>
+    </div>
+    <div id="uLog" data-page-node-id="KfdEz9Dxlm0DfNetIVJgLO"></div>
+  </div>
+  <div class="m-f" data-page-node-id="FtLYafKAxMutEKNFjm7ECO">
+    <button onclick="closeAll()" data-page-node-id="6cPEW7gS8wiJMAj1hYmiz8">关闭</button>
+    <button class="pri" onclick="doUpload()" id="uBtn" data-page-node-id="UX9VtOBbGDGtd6agtZnrSr">开始上传</button>
+  </div>
+</div>
+
+<script>
+const BASE='https://open.bigmodel.cn/api/llm-application/open';
+const CHAT='https://open.bigmodel.cn/api/paas/v4/chat/completions';
+/* 内置检索凭据（拆段存储） */
+const EMBED_KEY1='f4fcdd92187545ed957ce9f64442df2e';
+const EMBED_KEY2='.yevPi0Mthv2EitFo';
+const LS='kb_cfg_v1';
+const ADMIN_LS='kb_admin_v1';
+// 默认参数（可被后台 admin.html 保存的配置覆盖）
+const DEF={
+  kb_whitelist:['2096886582564073472'],
+  ok_ext:['md','txt','pdf','doc','docx','ppt','pptx','xls','xlsx','csv'],
+  img_ext:['jpg','jpeg','png','webp'],
+  img_max:5,
+  media_ext:['mp4','mov','avi','mkv','webm','flv','wmv','m4v','mp3','wav','m4a','gif','bmp','svg','tif','tiff'],
+  maxmb:20,
+  limits:{md:5,txt:5,csv:10,doc:20,docx:20,xls:20,xlsx:20,pdf:20,ppt:50,pptx:50},
+  model:'glm-4.6',
+  ktype:'1',
+  ssize:300,
+  pimg:false,
+  recall:'mixed',
+  topk:10,
+  auto:true,
+  access_mode:'open',
+  allowed_devices:[],
+  upload_pass:'12345678'
+};
+let CFG=Object.assign({},DEF);
+try{Object.assign(CFG,JSON.parse(localStorage.getItem(ADMIN_LS)||'{}'));}catch(e){}
+let KB_WHITELIST,OK_EXT,IMG_EXT,IMG_MAX_MB,MEDIA_EXT;
+function applyCFG(){
+  KB_WHITELIST=CFG.kb_whitelist||[];
+  OK_EXT=CFG.ok_ext||DEF.ok_ext;
+  IMG_EXT=CFG.img_ext||DEF.img_ext;
+  IMG_MAX_MB=CFG.img_max||5;
+  MEDIA_EXT=CFG.media_ext||DEF.media_ext;
+}
+applyCFG();
+
+let S={key:EMBED_KEY1+EMBED_KEY2,libs:[],cats:null,tree:null,docIndex:null,tOpen:{},sel:'ALL',recall:CFG.recall||'keyword',topk:CFG.topk||10};
+let _selDocs=null; // 当前选中目录节点包含的文档名集合，检索结果按它过滤
+let PENDING=[];
+let REJECTED=[];
+
+// ============ 设备唯一码 ============
+const DEV_LS='kb_device_id';
+function getDevId(){
+  let d=null;
+  try{d=localStorage.getItem(DEV_LS);}catch(e){}
+  if(!d){
+    // 浏览器指纹：同一浏览器跨域名也得到同一个码，避免每个站点各生成一个
+    const raw=[navigator.userAgent,navigator.language,(screen.width+'x'+screen.height+'x'+(screen.colorDepth||24)),(navigator.hardwareConcurrency||0),(Intl.DateTimeFormat().resolvedOptions().timeZone||'')].join('|');
+    let h1=0x811c9dc5,h2=0x1000193;
+    for(let i=0;i<raw.length;i++){const c=raw.charCodeAt(i);h1=(h1^c);h1=Math.imul(h1,0x01000193)>>>0;h2=(h2+c+i*31)>>>0;h2=Math.imul(h2,0x85ebca6b)>>>0;}
+    d='dev-'+h1.toString(36)+'-'+h2.toString(36);
+    try{localStorage.setItem(DEV_LS,d);}catch(e){}
+  }
+  return d;
+}
+const DEV_ID=getDevId();
+
+// 每个格式单独的上限；没有单独设置的用统一 maxmb 兜底
+function limitFor(ext){
+  ext=(ext||'').toLowerCase();
+  if(IMG_EXT.includes(ext))return IMG_MAX_MB;
+  const v=CFG.limits?CFG.limits[ext]:null;
+  return (v!=null?v:(CFG.maxmb||20));
+}
+
+// 访问控制：白名单模式下，设备码不在允许名单里就拒绝使用
+function accessDenied(){
+  return CFG.access_mode==='whitelist'&&!(CFG.allowed_devices||[]).includes(DEV_ID);
+}
+function showDenied(){
+  $('list').innerHTML='<div class="empty"><div style="font-size:15px;color:var(--err);font-weight:600;margin-bottom:10px">本设备未获得使用授权</div>'
+    +'设备码：<b style="user-select:all">'+esc(DEV_ID)+'</b> '
+    +'<button style="padding:2px 10px;font-size:12px" onclick="navigator.clipboard&&navigator.clipboard.writeText(DEV_ID)">复制</button>'
+    +'<div class="tip" style="margin-top:10px">把设备码发给管理员，加入允许名单后刷新本页即可。</div></div>';
+}
+const $=id=>document.getElementById(id);
+
+// ============ 平台配置（后台发布 → GitHub 仓库 config.json → 前台每次打开拉取）============
+const REPO_CFG='https://raw.githubusercontent.com/phgithum/360-kb/main/config.json';
+async function pullRemote(){
+  try{
+    const r=await fetch(REPO_CFG+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d&&d.config)Object.assign(CFG,d.config);
+    applyCFG();
+  }catch(e){/* 拉取失败就用本地/默认配置 */}
+}
+
+function loadCfg(){
+  try{const c=JSON.parse(localStorage.getItem(LS)||'{}');S=Object.assign(S,c);}catch(e){}
+  $('sKey').value=S.key||'';
+  $('recall').value=S.recall;$('topk').value=String(S.topk);
+}
+function saveCfg(){localStorage.setItem(LS,JSON.stringify(S));}
+
+async function viewFull(el){
+  const u=el.getAttribute('data-u'),t=el.getAttribute('data-t')||'查看全文';
+  const hit0=parseInt(el.getAttribute('data-p')||'0',10);
+  $('fullTitle').textContent=t;
+  $('mask').classList.add('on');
+  $('mFull').classList.add('on');
+  const body=$('fullBody');
+  $('docFind').value='';
+  body.innerHTML='<div class="tip" style="padding:16px">加载中…</div>';
+  try{
+    if(/\.pdf$/i.test(t)){
+      await loadPdfJs();
+      // 复用预览时已下载的文档，秒开；没有缓存才重新下载
+      let doc=_docCache[u];
+      if(!doc){const buf=await fileBuf(u);doc=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;_docCache[u]=doc;}
+      body.innerHTML='';
+      // 先给每页放占位块（保持页序），命中页优先渲染并自动滚动到位
+      const holders={};
+      const start=Math.min(Math.max(1,hit0+1),doc.numPages);
+      const order=[start];
+      for(let p=1;p<=doc.numPages;p++)if(p!==start)order.push(p);
+      for(let p=1;p<=doc.numPages;p++){
+        const h=document.createElement('div');
+        h.style.cssText='text-align:center;padding:6px 0;color:var(--tx3);font-size:12px';
+        h.textContent='第 '+p+' 页 · 加载中…';
+        holders[p]=h;body.appendChild(h);
+      }
+      let jumped=false;
+      for(const p of order){
+        try{
+          const page=await doc.getPage(p);
+          const vp0=page.getViewport({scale:1});
+          const vp=page.getViewport({scale:Math.min(860/vp0.width,2)});
+          const cv=document.createElement('canvas');
+          cv.width=vp.width;cv.height=vp.height;
+          cv.style.cssText='width:100%;max-width:860px;display:block;margin:0 auto 4px';
+          await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+          const h=holders[p];h.innerHTML='';h.style.cssText='padding:0';
+          h.appendChild(cv);
+          // 每页附可复制文字层（文档内搜索也用它）
+          try{
+            const tc=await page.getTextContent();
+            const txt=tc.items.map(it=>it.str||'').join(' ').replace(/\s+/g,' ').trim();
+            if(txt){
+              const lb=document.createElement('div');
+              lb.style.cssText='font-size:11px;color:var(--tx3);margin:0 auto 2px;max-width:860px';
+              lb.textContent='— 第 '+p+' 页文字版（可直接复制）'+(p===start&&hit0>=0?' · 本次命中页':'')+'—';
+              const pre=document.createElement('div');
+              pre.className='pgtxt';pre.setAttribute('data-pg',p);
+              pre.style.cssText='max-width:860px;margin:0 auto 18px;padding:10px 14px;border:1px dashed var(--line2);border-radius:6px;font-size:13px;line-height:1.8;color:var(--tx2);white-space:pre-wrap;word-break:break-word;user-select:text';
+              pre.textContent=txt;
+              h.appendChild(lb);h.appendChild(pre);
+            }
+          }catch(e){}
+          if(p===start&&!jumped){jumped=true;h.scrollIntoView();}
+        }catch(e){holders[p].textContent='第 '+p+' 页渲染失败';}
+      }
+    }else if(/\.docx$/i.test(t)){
+      await loadMammoth();
+      const d=await window.mammoth.convertToHtml({arrayBuffer:await fileBuf(u)});
+      body.innerHTML='<div style="padding:16px 24px;font-size:14px;line-height:1.9;max-width:860px;margin:0 auto">'+(d.value||'<span class="tip">此文档没有可显示的文本内容</span>')+'</div>';
+    }else if(/\.(md|txt|csv)$/i.test(t)){
+      const txt=new TextDecoder('utf-8').decode(await fileBuf(u));
+      body.innerHTML='<pre style="padding:16px 24px;margin:0;white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.8;font-family:inherit;max-width:860px;margin:0 auto">'+esc(txt)+'</pre>';
+    }else{
+      // 其他格式退回新窗口打开（浏览器自身能力）
+      body.innerHTML='<div class="tip" style="padding:16px">该格式不支持站内直接展示，<a href="'+esc(u)+'" target="_blank" rel="noopener">点此在新窗口打开</a></div>';
+    }
+  }catch(e){
+    body.innerHTML='<div class="tip" style="padding:16px">加载失败（'+esc(e.message)+'），可<a href="'+esc(u)+'" target="_blank" rel="noopener">在新窗口打开</a></div>';
+  }
+}
+
+// 把图片转成单页 PDF（绕过智谱图片直传处理失败的问题）
+let _jspdfP=null;
+function loadJsPdf(){
+  if(window.jspdf&&window.jspdf.jsPDF)return Promise.resolve();
+  if(_jspdfP)return _jspdfP;
+  _jspdfP=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload=()=>window.jspdf?res():rej(new Error('jsPDF 加载失败'));
+    s.onerror=()=>rej(new Error('jsPDF 加载失败（网络问题）'));
+    document.head.appendChild(s);
+  });
+  return _jspdfP;
+}
+async function imgToPdf(f){
+  await loadJsPdf();
+  const dataUrl=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);r.onerror=()=>rej(new Error('读取文件失败'));
+    r.readAsDataURL(f);
+  });
+  const dim=await new Promise((res,rej)=>{
+    const im=new Image();
+    im.onload=()=>res({w:im.width,h:im.height});
+    im.onerror=()=>rej(new Error('图片解析失败'));
+    im.src=dataUrl;
+  });
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:dim.w>=dim.h?'l':'p',unit:'pt',format:[dim.w,dim.h]});
+  pdf.addImage(dataUrl,/\.jpe?g$/i.test(f.name)||'image/jpeg'===f.type?'JPEG':'PNG',0,0,dim.w,dim.h);
+  return pdf.output('blob');
+}
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function api(path,opt={}){
+  if(!S.key)throw new Error('请先在设置里填写智谱 API Key');
+  const h={'Authorization':'Bearer '+S.key};
+  if(opt.json)h['Content-Type']='application/json';
+  const r=await fetch(BASE+path,{method:opt.method||'GET',headers:h,body:opt.body});
+  let d;try{d=await r.json();}catch(e){throw new Error('返回解析失败 HTTP '+r.status);}
+  if(d.code!==200&&d.code!==0){throw new Error(d.message||('接口错误 '+d.code));}
+  return d;
+}
+
+function setStatus(ok,txt){$('dot').className='dot'+(ok?' on':'');$('hint').textContent=txt;}
+
+async function loadLibs(silent){
+  try{
+    let all=[],page=1,total=0;
+    do{
+      const d=await api('/knowledge?page='+page+'&size=50');
+      const dd=d.data||{};total=dd.total||0;all=all.concat(dd.list||[]);page++;
+    }while(all.length<total&&page<20);
+    let libs=all.map(k=>({id:String(k.id),name:k.name||'未命名',size:k.document_size||0}));
+    if(KB_WHITELIST.length)libs=libs.filter(k=>KB_WHITELIST.includes(k.id));
+    S.libs=libs;
+    saveCfg();renderTree();
+    $('catBtn').style.display=S.libs.length>0?'':'none';
+    setStatus(true,'已连接 · '+S.libs.length+' 个知识库');
+    if(!S.cats)renderTree();
+    updScope();
+  }catch(e){
+    setStatus(false,'连接失败');
+    if(!silent)alert('加载知识库失败：'+e.message);
+  }
+}
+
+function kbName(id){const k=S.libs.find(x=>x.id===String(id));return k?k.name:id;}
+
+function normName(s){return String(s==null?'':s).trim().replace(/\s+/g,' ');}
+function treeNodeCount(node){
+  if(Array.isArray(node))return node.length;
+  let n=0;for(const k in node)n+=treeNodeCount(node[k]);return n;
+}
+function treeDocs(node,out){
+  out=out||new Set();
+  if(Array.isArray(node)){node.forEach(d=>out.add(normName(d)));return out;}
+  for(const k in node)treeDocs(node[k],out);
+  return out;
+}
+let TM={}; // 渲染目录树时登记节点：T:id -> {node,label}，D:id -> {kbId,name}
+function renderTree(){
+  TM={};
+  const t=$('tree');let h='';
+  const allSel=S.sel==='ALL';
+  h+='<div class="grp-t'+(allSel?' sel':'')+'" onclick="setSel(\'ALL\')"><span class="grp-n">全部知识库</span><span class="badge">'+S.libs.length+'</span></div>';
+  if(S.tree&&Object.keys(S.tree).length){
+    h+=_treeLevel(S.tree,0,'');
+  }else if(S.cats&&Object.keys(S.cats).length){
+    for(const c of Object.keys(S.cats)){
+      const ids=(S.cats[c]||[]).map(String);
+      h+='<div class="grp-t'+(S.sel==='C:'+c?' sel':'')+'" onclick="setSel(\'C:'+esc(c)+'\')"><span class="grp-n">'+esc(c)+'</span><span class="badge">'+ids.length+'</span></div>';
+      if(S.sel==='C:'+c)for(const id of ids){
+        const k=S.libs.find(x=>x.id===id)||{name:id,size:0};
+        h+='<div class="lib" onclick="setSel(\'K:'+id+'\')"><span>'+esc(k.name)+'</span><span class="badge">'+(k.size||0)+'</span></div>';
+      }
+    }
+  }else{
+    for(const k of S.libs){
+      h+='<div class="lib'+(S.sel==='K:'+k.id?' sel':'')+'" onclick="setSel(\'K:'+k.id+'\')"><span>'+esc(k.name)+'</span><span class="badge">'+(k.size||0)+'</span></div>';
+    }
+  }
+  t.innerHTML=h;
+}
+function _treeLevel(obj,depth,prefix){
+  let h='';
+  Object.keys(obj).forEach((label,i)=>{
+    const id=(prefix?prefix+'-':'')+i;
+    const node=obj[label];
+    const isObj=node&&!Array.isArray(node);
+    if(S.tOpen[id]===undefined)S.tOpen[id]=(depth===0); // 一级类目默认展开
+    const open=S.tOpen[id];
+    const cnt=treeNodeCount(node);
+    TM[id]={node:node,label:label};
+    const tw=isObj?'<span class="tw" onclick="event.stopPropagation();twToggle(\''+id+'\')">'+(open?'▾':'▸')+'</span>':'<span class="tw"></span>';
+    h+='<div class="grp-t'+(S.sel==='T:'+id?' sel':'')+'" style="padding-left:'+(6+depth*13)+'px" title="'+esc(label)+'" onclick="setSel(\'T:'+id+'\')">'+tw+'<span class="grp-n">'+esc(label)+'</span><span class="badge">'+cnt+'</span></div>';
+    if(!open)return;
+    if(isObj){h+=_treeLevel(node,depth+1,id);}
+    else{
+      node.forEach((d,j)=>{
+        const dn=normName(d);
+        const did=id+'#'+j;
+        const hit=(S.docIndex||[]).find(x=>x.name===dn);
+        TM[did]={kbId:hit?hit.kbId:'',name:dn};
+        h+='<div class="lib'+(S.sel==='D:'+did?' sel':'')+'" style="padding-left:'+(20+depth*13)+'px" title="'+esc(dn)+'" onclick="setSel(\'D:'+did+'\')"><span>📄 '+esc(dn)+'</span></div>';
+      });
+    }
+  });
+  return h;
+}
+function twToggle(id){
+  S.tOpen[id]=!(S.tOpen[id]!==undefined?S.tOpen[id]:true);
+  saveCfg();renderTree();
+}
+
+function setSel(v){S.sel=(S.sel===v&&v!=='ALL')?'ALL':v;saveCfg();renderTree();updScope();}
+
+function scopeIds(){
+  if(S.sel==='ALL')return S.libs.map(k=>k.id);
+  if(S.sel.startsWith('C:'))return (S.cats[S.sel.slice(2)]||[]).map(String);
+  if(S.sel.startsWith('K:'))return [S.sel.slice(2)];
+  if(S.sel.startsWith('T:')){
+    const e=TM[S.sel.slice(2)];
+    if(!e)return [];
+    const docs=treeDocs(e.node);
+    const kbs=new Set();
+    (S.docIndex||[]).forEach(x=>{if(docs.has(x.name))kbs.add(x.kbId);});
+    return Array.from(kbs);
+  }
+  if(S.sel.startsWith('D:')){
+    const e=TM[S.sel.slice(2)];
+    return e&&e.kbId?[e.kbId]:[];
+  }
+  return S.libs.map(k=>k.id);
+}
+function updScope(){
+  _selDocs=null;
+  let label='';
+  const ids=scopeIds();
+  if(S.sel==='ALL')label='全部知识库';
+  else if(S.sel.startsWith('C:'))label='分类「'+S.sel.slice(2)+'」';
+  else if(S.sel.startsWith('T:')){const e=TM[S.sel.slice(2)];label=e?e.label:'目录';if(e)_selDocs=treeDocs(e.node);}
+  else if(S.sel.startsWith('D:')){const e=TM[S.sel.slice(2)];label=e?e.name:'文档';if(e)_selDocs=new Set([e.name]);}
+  else label=kbName(S.sel.slice(2));
+  const docs=ids.reduce((n,id)=>n+((S.libs.find(k=>k.id===id)||{}).size||0),0);
+  $('scope').textContent='当前范围：'+label+' · 共 '+ids.length+' 个库 · '+docs+' 个文档 · 检索模式：'+$('recall').selectedOptions[0].text;
+}
+
+async function doSearch(){
+  const q=$('q').value.trim();if(!q)return;
+  try{ // 搜索词统计（存本机，后台可看）
+    const raw=JSON.parse(localStorage.getItem('kb_qstats')||'{}');
+    const k=q.toLowerCase();
+    if(!raw[k])raw[k]={n:0,last:''};
+    raw[k].n++;raw[k].last=new Date().toLocaleString('zh-CN');
+    const keys=Object.keys(raw);
+    if(keys.length>500){keys.sort((a,b)=>raw[a].last<raw[b].last?-1:1).slice(0,keys.length-500).forEach(x=>delete raw[x]);}
+    localStorage.setItem('kb_qstats',JSON.stringify(raw));
+  }catch(e){}
+  flushStat(q);
+  S.recall=$('recall').value;S.topk=+ $('topk').value;saveCfg();
+  const ids=scopeIds();
+  if(!ids.length){alert('没有选中任何知识库');return;}
+  const b=$('btn');b.disabled=true;b.textContent='检索中';
+  // 搜过的词直接用缓存秒出（10 分钟内有效），同时后台刷新
+  let cached=null;
+  try{
+    const sc=JSON.parse(localStorage.getItem('kb_scache')||'{}');
+    const ck=ids.join(',')+'|'+S.recall+'|'+q.toLowerCase();
+    if(sc[ck]&&Date.now()-sc[ck].t<600000)cached=sc[ck].d;
+  }catch(e){}
+  if(cached){
+    renderResults(cached,q);
+    b.disabled=false;b.textContent='检索';
+  }else{
+    $('list').innerHTML='<div class="empty">正在检索…</div>';
+  }
+  try{
+    const d=await api('/knowledge/retrieve',{method:'POST',json:1,body:JSON.stringify({
+      query:q,knowledge_ids:ids,top_k:S.topk,top_n:Math.min(100,Math.max(S.topk*3,20)),recall_method:S.recall
+    })});
+    try{ // 写入搜索结果缓存（最多存 30 条，超出淘汰最旧的）
+      const sc=JSON.parse(localStorage.getItem('kb_scache')||'{}');
+      const ck=ids.join(',')+'|'+S.recall+'|'+q.toLowerCase();
+      sc[ck]={t:Date.now(),d:d.data||[]};
+      const ks=Object.keys(sc);
+      if(ks.length>30)ks.sort((a,c)=>sc[a].t-sc[c].t).slice(0,ks.length-30).forEach(x=>delete sc[x]);
+      localStorage.setItem('kb_scache',JSON.stringify(sc));
+    }catch(e){}
+    if(!cached)renderResults(d.data||[],q); // 缓存命中时已秒显，不再重绘
+  }catch(e){
+    if(!cached)$('list').innerHTML='<div class="empty" style="color:var(--err)">检索失败：'+esc(e.message)+'</div>';
+  }finally{b.disabled=false;b.textContent='检索';}
+}
+
+// 全平台搜索统计：把词条写到 stats 仓库（后台发布的 token，只对统计仓库有权限）
+function flushStat(q){
+  const TOK=(CFG.stats_t1||'')+(CFG.stats_t2||'');
+  if(!CFG.stats_repo||!TOK)return;
+  const H={'Authorization':'Bearer '+TOK,'Accept':'application/vnd.github+json','Content-Type':'application/json','User-Agent':'kb-stats'};
+  const d=new Date(),pad=n=>String(n).padStart(2,'0');
+  const path='data/'+d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'-'+pad(d.getHours())+'.json';
+  const api='https://api.github.com/repos/'+CFG.stats_repo+'/contents/'+path;
+  (async()=>{
+    for(let i=0;i<4;i++){ // 并发写同小时文件可能冲突，重试 4 次
+      try{
+        const body={message:'stat',branch:'main'};
+        const r=await fetch(api,{headers:H});
+        let obj={};
+        if(r.status===200){
+          const j=await r.json();
+          try{obj=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g,'')),c=>c.charCodeAt(0))))||{};}catch(e){obj={};}
+          body.sha=j.sha;
+        }else if(r.status!==404)throw new Error('HTTP '+r.status);
+        const k=q.toLowerCase();
+        obj[k]=(obj[k]||0)+1;
+        body.content=btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+        const w=await fetch(api,{method:'PUT',headers:H,body:JSON.stringify(body)});
+        if(w.status===200||w.status===201)return;
+        if(w.status!==409)throw new Error('write '+w.status);
+      }catch(e){if(i===3)return;}
+    }
+  })();
+}
+
+// 设备登记：每台设备每次打开会话上报一次设备码到统计仓库，后台可看接入设备列表
+async function regDevice(){
+  try{
+    if(sessionStorage.getItem('kb_dev_reg')==='1')return;
+    const TOK=(CFG.stats_t1||'')+(CFG.stats_t2||'');
+    if(!CFG.stats_repo||!TOK)return;
+    sessionStorage.setItem('kb_dev_reg','1');
+    const H={'Authorization':'Bearer '+TOK,'Accept':'application/vnd.github+json','Content-Type':'application/json','User-Agent':'kb-stats'};
+    const api='https://api.github.com/repos/'+CFG.stats_repo+'/contents/devices/'+encodeURIComponent(DEV_ID)+'.json';
+    let now=new Date().toLocaleString('zh-CN');
+    let body={message:'device',branch:'main',content:btoa(unescape(encodeURIComponent(JSON.stringify({id:DEV_ID,first:now,last:now,ua:navigator.userAgent.slice(0,120)}))))};
+    for(let i=0;i<3;i++){
+      try{
+        const r=await fetch(api,{headers:H});
+        if(r.status===200){
+          const j=await r.json();
+          const old=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\n/g,'')),c=>c.charCodeAt(0))));
+          old.last=now;
+          body={message:'device',branch:'main',sha:j.sha,content:btoa(unescape(encodeURIComponent(JSON.stringify(old))))};
+        }else if(r.status!==404)throw new Error('HTTP '+r.status);
+        const w=await fetch(api,{method:'PUT',headers:H,body:JSON.stringify(body)});
+        if(w.status===200||w.status===201)return;
+        if(w.status!==409)return;
+      }catch(e){return;}
+    }
+  }catch(e){}
+}
+// ============ 收藏置顶：星标常用地文档，检索时自动排最前 ============
+const FAV_LS='kb_favs';
+function getFavs(){try{return JSON.parse(localStorage.getItem(FAV_LS)||'[]');}catch(e){return[];}}
+function saveFavs(f){try{localStorage.setItem(FAV_LS,JSON.stringify(f.slice(0,200)));}catch(e){}}
+function favKey(u,t){return (u||'')+'|'+(t||'');}
+function isFav(u,t){return getFavs().some(f=>f.k===favKey(u,t));}
+let LAST_RES=null; // 最近一次检索结果，点星标后重排实现即时置顶
+function toggleFav(el){
+  const u=el.getAttribute('data-u')||'',t=el.getAttribute('data-t')||'',kb=el.getAttribute('data-k')||'';
+  let f=getFavs();
+  const k=favKey(u,t);
+  if(f.some(x=>x.k===k)){f=f.filter(x=>x.k!==k);el.textContent='☆';el.style.color='#ccc';}
+  else{f.unshift({k:k,u:u,t:t,kb:kb,tm:Date.now()});el.textContent='★';el.style.color='#d9a400';}
+  saveFavs(f);renderFavbar();
+  if(LAST_RES)renderResults(LAST_RES.data,LAST_RES.q); // 重新排序：收藏的排最前
+}
+function renderFavbar(){
+  const f=getFavs(),bar=$('favbar');
+  if(!f.length){bar.style.display='none';return;}
+  bar.style.display='flex';
+  bar.innerHTML='<span style="flex:none">⭐ 常用：</span>'
+    +f.slice(0,12).map(x=>'<span class="fv" onclick="openFav(this)" data-u="'+esc(x.u)+'" data-t="'+esc(x.t)+'" title="点击查看全文">'+esc((x.t||'未命名').slice(0,18))+'<span class="fv-x" onclick="event.stopPropagation();delFav(this)" data-k="'+esc(x.k)+'">×</span></span>').join('')
+    +(f.length>12?'<span style="color:var(--tx3)">等 '+f.length+' 条</span>':'');
+}
+function delFav(el){
+  const k=el.getAttribute('data-k');
+  saveFavs(getFavs().filter(x=>x.k!==k));
+  renderFavbar();
+  if(LAST_RES)renderResults(LAST_RES.data,LAST_RES.q);
+}
+function openFav(el){
+  if(!el.getAttribute('data-u')){alert('该收藏没有可打开的原文链接');return;}
+  viewFull(el);
+}
+function showFavs(){
+  const f=getFavs();
+  if(!f.length){$('list').innerHTML='<div class="empty">还没有收藏。检索结果右侧的 ☆ 点一下变 ★ 就收藏了，下次检索自动置顶。</div>';return;}
+  const h='<div style="font-size:13px;font-weight:600;margin-bottom:10px">⭐ 我的收藏（'+f.length+'）</div>'
+    +f.map(x=>'<div class="card"><div class="c-h"><span class="c-doc">'+esc(x.t||'未命名文档')+'</span>'
+      +(x.kb?'<span class="c-kb">'+esc(x.kb)+'</span>':'')
+      +'<span class="c-sc"><span class="star" style="color:#d9a400" onclick="delFav(this);this.closest(\'.card\').remove()" data-k="'+esc(x.k)+'" title="取消收藏">★</span></span></div>'
+      +'<div class="c-f">'+(x.u?'<a href="javascript:void(0)" onclick="viewFull(this)" data-u="'+esc(x.u)+'" data-t="'+esc(x.t)+'" data-p="0" style="font-weight:600">📄 查看全文</a>':'<span style="font-size:12px;color:var(--tx3)">无原文链接</span>')+'</div></div>').join('');
+  $('list').innerHTML=h;
+  window.scrollTo&&0;
+}
+
+// ============ 搜索联想：历史搜索词 + 收藏文档名，输入即提示，键盘可选 ============
+let _sugList=[],_sugIdx=-1,_sugTimer=null;
+function _sugSource(){
+  let hist=[];
+  try{
+    const raw=JSON.parse(localStorage.getItem('kb_qstats')||'{}');
+    hist=Object.keys(raw).sort((a,b)=>(raw[b].n||0)-(raw[a].n||0)).slice(0,100)
+      .map(w=>({v:w,tag:'历史'}));
+  }catch(e){}
+  getFavs().forEach(f=>{if(f.t)hist.push({v:f.t,tag:'⭐收藏'});});
+  return hist;
+}
+function sugInput(){
+  clearTimeout(_sugTimer);
+  _sugTimer=setTimeout(()=>{
+    const q=$('q').value.trim().toLowerCase();
+    const box=$('sug');
+    if(!q){box.classList.remove('on');return;}
+    const seen={},cands=[];
+    for(const it of _sugSource()){
+      const w=it.v.toLowerCase();
+      if(w===q||!w.includes(q))continue;
+      if(seen[it.v])continue;seen[it.v]=1;
+      // 前缀命中的排前面
+      cands.push({v:it.v,tag:it.tag,pre:w.startsWith(q)?0:1});
+      if(cands.length>=10)break;
+    }
+    if(!cands.length){box.classList.remove('on');return;}
+    cands.sort((a,b)=>a.pre-b.pre);
+    _sugList=cands;_sugIdx=-1;
+    box.innerHTML=cands.map((c,i)=>{
+      const idx=c.v.toLowerCase().indexOf(q);
+      const html=esc(c.v.slice(0,idx))+'<span class="s-hl">'+esc(c.v.slice(idx,idx+q.length))+'</span>'+esc(c.v.slice(idx+q.length));
+      return '<div onmousedown="sugPick('+i+')" data-i="'+i+'">'+html+'<span class="s-tag">'+c.tag+'</span></div>';
+    }).join('');
+    box.classList.add('on');
+  },120);
+}
+function sugKey(e){
+  const box=$('sug');
+  if(box.classList.contains('on')&&_sugList.length){
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      _sugIdx=(_sugIdx+(e.key==='ArrowDown'?1:-1)+_sugList.length)%_sugList.length;
+      box.querySelectorAll(':scope>div').forEach((d,i)=>d.classList.toggle('act',i===_sugIdx));
+      const act=box.querySelector('div.act');if(act)act.scrollIntoView({block:'nearest'});
+      return;
+    }
+    if(e.key==='Enter'&&_sugIdx>=0){e.preventDefault();sugPick(_sugIdx);return;}
+  }
+  if(e.key==='Enter'){box.classList.remove('on');doSearch();}
+  if(e.key==='Escape')box.classList.remove('on');
+}
+function sugPick(i){
+  const c=_sugList[i];if(!c)return;
+  $('q').value=c.v;
+  $('sug').classList.remove('on');
+  doSearch();
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.sbar'))$('sug').classList.remove('on');
+});
+
+function hl(text,q){  const raw=String(text==null?'':text);
+  // 1. 生成候选词：把查询串按分隔符拆开，再从每段里取出所有 >=2 字的连续子串
+  const segs=q.split(/[\s,，。、？?！!]+/).filter(Boolean).slice(0,8);
+  const cands=new Set();
+  for(const seg of segs){
+    for(let i=0;i<seg.length;i++){
+      for(let len=2;len<=Math.min(8,seg.length-i);len++)cands.add(seg.slice(i,i+len));
+    }
+  }
+  // 2. 在原文里找出所有候选词的命中位置
+  const hits=[];
+  for(const w of cands){
+    let idx=0;
+    const lw=w.toLowerCase(),lr=raw.toLowerCase();
+    while((idx=lr.indexOf(lw,idx))!==-1){hits.push([idx,idx+w.length]);idx+=1;}
+  }
+  if(!hits.length)return esc(raw);
+  // 3. 合并重叠区间，长词优先保留
+  hits.sort((a,b)=>a[0]-b[0]||b[1]-a[1]);
+  const merged=[];
+  for(const h of hits){
+    const last=merged[merged.length-1];
+    if(last&&h[0]<last[1]){if(h[1]>last[1])last[1]=h[1];}
+    else merged.push([h[0],h[1]]);
+  }
+  // 4. 拼装 HTML
+  let out='',pos=0;
+  for(const [s,e] of merged){
+    out+=esc(raw.slice(pos,s))+'<em>'+esc(raw.slice(s,e))+'</em>';
+    pos=e;
+  }
+  return out+esc(raw.slice(pos));
+}
+
+function renderResults(data,q){
+  if(_selDocs)data=data.filter(it=>_selDocs.has(normName((it.metadata&&it.metadata.doc_name)||'')));
+  if(!data.length){$('list').innerHTML='<div class="empty">没有找到相关内容，换个关键词或试试「混合检索」</div>';return;}
+  LAST_RES={data:data,q:q}; // 记住本次结果，点星标后用它重排
+  // 同一文档的多个片段命中只保留相关度最高的一条，标注命中片段数
+  const seen={},list=[];
+  for(const it of data){
+    const m=it.metadata||{};
+    const key=(m.doc_url||m.doc_name||'')+'#'+(m.page_index!=null?m.page_index:'');
+    if(seen[key]){seen[key].n++;continue;}
+    seen[key]=it;it.n=1;list.push(it);
+  }
+  // 收藏的文档自动置顶（稳定排序，同组内保持相关度顺序）
+  list.sort((a,b)=>{
+    const fa=isFav(a.metadata&&a.metadata.doc_url,a.metadata&&a.metadata.doc_name)?1:0;
+    const fb=isFav(b.metadata&&b.metadata.doc_url,b.metadata&&b.metadata.doc_name)?1:0;
+    return fb-fa;
+  });
+  let h='';
+  list.forEach((it,i)=>{
+    const m=it.metadata||{};
+    const url=m.doc_url||'';
+    const fav=isFav(url,m.doc_name);
+    const isPdf=/\.pdf$/i.test(String(m.doc_name||''))||m.doc_type==='pdf';
+    h+='<div class="card">'
+      +'<div class="c-h"><span class="c-idx">'+(i+1)+'</span>'
+      +'<span class="c-doc">'+esc(m.doc_name||'未命名文档')+'</span>'
+      +'<span class="c-kb">'+esc(kbName(m.knowledge_id))+'</span>'
+      +(it.n>1?'<span class="c-kb" style="color:var(--main)">命中 '+it.n+' 处</span>':'')
+      +'<span class="c-sc">相关度 '+(it.score==null?'-':it.score.toFixed(3))+'</span>'
+      +'<span class="star" title="收藏后检索自动置顶" onclick="toggleFav(this)" data-u="'+esc(url)+'" data-t="'+esc(m.doc_name||'')+'" data-k="'+esc(kbName(m.knowledge_id))+'" style="color:'+(fav?'#d9a400':'#ccc')+'">'+(fav?'★':'☆')+'</span></div>'
+      +'<div class="c-tx">'+hl(it.text||'',q)+'</div>'
+      +(url?'<div class="c-prev" data-u="'+esc(url)+'" data-n="'+esc(m.doc_name||'')+'" data-p="'+(m.page_index!=null?m.page_index:0)+'"><div class="tip" style="padding:6px 2px">正在加载原文预览…</div></div>':'')
+      +'<div class="c-f">'+(url?'<a href="javascript:void(0)" onclick="viewFull(this)" data-u="'+esc(url)+'" data-t="'+esc(m.doc_name||'')+'" data-p="'+(m.page_index!=null?m.page_index:0)+'" style="font-weight:600">📄 查看全文</a> <a href="'+esc(url)+'" target="_blank" rel="noopener">新窗口打开</a>':'<span style="font-size:12px;color:var(--tx3)">该文档无可跳转链接</span>')
+      +(m.contextual_text?'<button style="padding:3px 10px;font-size:12px" onclick="this.closest(\'.card\').querySelector(\'.c-ctx\').classList.toggle(\'on\')">上下文</button>':'')
+      +'</div>'
+      +(m.contextual_text?'<div class="c-ctx">'+esc(m.contextual_text)+'</div>':'')
+      +'</div>';
+  });
+  $('list').innerHTML=h;
+  document.querySelectorAll('.c-prev').forEach(renderPreview);
+}
+
+// ============ 原文内嵌预览：pdf.js 渲染 PDF / mammoth 转_docx / 直接读文本 ============
+// 多 CDN 依次回退（cdnjs 国内经常连不上，用 bootcdn 兜底）
+function loadScriptAny(urls){
+  return urls.reduce((p,u)=>p.catch(()=>new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src=u;s.onload=res;s.onerror=()=>rej(new Error('加载失败: '+u));
+    document.head.appendChild(s);
+  })),Promise.reject());
+}
+let _pdfjsP=null;
+function loadPdfJs(){
+  if(window.pdfjsLib)return Promise.resolve();
+  if(_pdfjsP)return _pdfjsP;
+  _pdfjsP=loadScriptAny([
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+    'https://cdn.staticfile.net/pdf.js/3.11.174/pdf.min.js'
+  ]).then(()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';});
+  return _pdfjsP;
+}
+let _mammothP=null;
+function loadMammoth(){
+  if(window.mammoth)return Promise.resolve();
+  if(_mammothP)return _mammothP;
+  _mammothP=loadScriptAny([
+    'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+    'https://cdn.bootcdn.net/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+    'https://cdn.staticfile.net/mammoth.js/1.6.0/mammoth.browser.min.js'
+  ]);
+  return _mammothP;
+}
+const _docCache={};
+// 持久缓存：文件下过一次就存进浏览器 Cache Storage，重开页面/重启浏览器都秒开
+async function fileBuf(url){
+  try{
+    if(window.caches){
+      const c=await caches.open('kb-files-v1');
+      let hit=await c.match(url);
+      if(!hit){
+        const resp=await fetch(url);
+        if(!resp.ok)throw new Error('HTTP '+resp.status);
+        await c.put(url,resp.clone());
+        hit=resp;
+      }
+      return await hit.arrayBuffer();
+    }
+  }catch(e){/* 缓存不可用就走普通下载 */}
+  return fetchDoc(url);
+}
+function fetchDoc(url){
+  if(!_docCache[url])_docCache[url]=fetch(url).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.arrayBuffer();});
+  return _docCache[url];
+}
+const _prevBoxH=300;
+function prevFooter(url,name,hit){
+  const f=document.createElement('div');
+  f.style.cssText='position:absolute;bottom:0;left:0;right:0;padding:7px 10px;border-top:1px solid var(--line2);text-align:center;background:rgba(250,251,252,.96)';
+  f.innerHTML='<a href="javascript:void(0)" onclick="viewFull(this)" data-u="'+url.replace(/"/g,'&quot;')+'" data-t="'+(name||'').replace(/"/g,'&quot;')+'" data-p="'+(hit||0)+'" style="font-weight:600">展开完整原文 📄</a>';
+  return f;
+}
+async function renderPreview(box){
+  const url=box.getAttribute('data-u'),name=box.getAttribute('data-n')||'';
+  const hit0=parseInt(box.getAttribute('data-p')||'0',10);
+  try{
+    // 固定一屏高度，超出截断不滚动；底部「展开完整原文」看全部
+    box.style.cssText='margin:8px 0;border:1px solid var(--line);border-radius:6px;height:'+_prevBoxH+'px;overflow:hidden;position:relative;background:#fff';
+    if(/\.pdf$/i.test(name)){
+      await loadPdfJs();
+      let doc=_docCache[url];
+      if(!doc){const buf=await fileBuf(url);doc=await pdfjsLib.getDocument({data:buf.slice(0)}).promise;_docCache[url]=doc;}
+      const wrap=document.createElement('div');
+      wrap.style.cssText='display:flex;gap:8px;padding:8px;overflow-x:auto;align-items:flex-start';
+      box.innerHTML='';
+      const start=Math.min(Math.max(1,hit0+1),doc.numPages);
+      const end=Math.min(start+5,doc.numPages); // 命中页起连续6页缩略图
+      const jobs=[];
+      for(let p=start;p<=end;p++)jobs.push((async()=>{
+        try{
+          const page=await doc.getPage(p);
+          const vp0=page.getViewport({scale:1});
+          const tw=170; // 缩略图宽170px，按比例缩放
+          const vp=page.getViewport({scale:tw/vp0.width});
+          const cv=document.createElement('canvas');
+          cv.width=vp.width;cv.height=vp.height;
+          cv.style.cssText='width:'+tw+'px;display:block;border:1px solid var(--line2);border-radius:3px;flex:none';
+          await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+          const cell=document.createElement('div');
+          cell.style.cssText='flex:none;text-align:center';
+          cell.appendChild(cv);
+          const lb=document.createElement('div');
+          lb.style.cssText='font-size:11px;color:#888;margin-top:2px';
+          lb.textContent='第'+p+'页';
+          cell.appendChild(lb);
+          wrap.appendChild(cell);
+        }catch(e){}
+      })());
+      await Promise.all(jobs); // 多页并行渲染，比逐页快
+      if(!wrap.children.length)wrap.innerHTML='<span class="tip">页面渲染失败</span>';
+      const tip=document.createElement('div');
+      tip.className='tip';tip.style.padding='4px 8px';
+      tip.textContent='原文缩略图：第 '+start+'–'+end+' 页 / 共 '+doc.numPages+' 页（横向滑动查看更多）';
+      box.appendChild(tip);box.appendChild(wrap);
+      box.appendChild(prevFooter(url,name,hit0));
+      box.scrollTop=0;
+    }else if(/\.docx$/i.test(name)){
+      await loadMammoth();
+      const buf=await fileBuf(url);
+      const d=await window.mammoth.convertToHtml({arrayBuffer:buf});
+      const wrap=document.createElement('div');
+      wrap.style.cssText='padding:12px 16px;font-size:13.5px;line-height:1.8';
+      wrap.innerHTML=d.value||'<span class="tip">此文档没有可显示的文本内容</span>';
+      box.innerHTML='';box.appendChild(wrap);
+      const tip=document.createElement('div');
+      tip.className='tip';tip.style.padding='4px 8px';
+      tip.textContent='docx 原文预览（转换显示，表格/图片样式可能简化）';
+      box.appendChild(tip);
+      box.appendChild(prevFooter(url,name,hit0));
+    }else if(/\.(md|txt|csv)$/i.test(name)){
+      const buf=await fileBuf(url);
+      const txt=new TextDecoder('utf-8').decode(buf);
+      const wrap=document.createElement('pre');
+      wrap.style.cssText='padding:12px 16px;margin:0;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.7;font-family:inherit';
+      wrap.textContent=txt.slice(0,20000)||'（空文档）';
+      box.innerHTML='';box.appendChild(wrap);
+      box.appendChild(prevFooter(url,name,hit0));
+    }else{
+      box.innerHTML='<div class="tip" style="padding:8px">该格式（'+esc(name.split('.').pop())+'）不支持内嵌预览，请用「查看全文」或「新窗口打开」</div>';
+    }
+  }catch(e){
+    box.innerHTML='<div class="tip" style="padding:8px">预览加载失败（'+esc(e.message)+'），可用「查看全文」或「新窗口打开」</div>';
+  }
+}
+
+async function autoTree(){
+  if(!S.libs.length){alert('请先加载知识库');return;}
+  if(!S.key){alert('请先填写 API Key');openSet();return;}
+  const b=$('catBtn');b.disabled=true;b.textContent='生成中';
+  try{
+    // 1. 拉取所有知识库的文档清单（文档名 → 所属知识库 的索引）
+    const idx=[];
+    for(const k of S.libs){
+      let page=1;
+      for(;;){
+        const r=await fetch(BASE+'/document?knowledge_id='+k.id+'&page='+page+'&size=100',{headers:{'Authorization':'Bearer '+S.key}});
+        const d=await r.json();
+        if(d.code!==200&&d.code!==0)throw new Error(d.message||('读取文档失败 '+d.code));
+        const list=(d.data&&d.data.list)||[];
+        list.forEach(it=>{if(it.name)idx.push({name:normName(it.name),kbId:k.id,kbName:k.name});});
+        const total=(d.data&&d.data.total)||0;
+        if(page*100>=total||page>=10)break;
+        page++;
+      }
+    }
+    if(!idx.length){alert('没有读到任何文档，无法生成目录树');return;}
+    S.docIndex=idx;
+    // 2. 交给模型按文档主题设计两级目录树（量大时分批，后续批次并入已有类目）
+    const lines=idx.map(x=>x.kbName+' :: '+x.name);
+    let tree={};
+    const CH=900;
+    for(let i=0;i<lines.length;i+=CH){
+      const part=await aiTreeChunk(lines.slice(i,i+CH),Object.keys(tree));
+      for(const c in part){
+        const pv=part[c];
+        if(Array.isArray(pv)){
+          tree[c]=(tree[c]&&Array.isArray(tree[c]))?tree[c].concat(pv):pv;
+        }else if(pv&&typeof pv==='object'){
+          if(tree[c]&&tree[c]&&!Array.isArray(tree[c])&&typeof tree[c]==='object')Object.assign(tree[c],pv);
+          else tree[c]=pv;
+        }
+      }
+    }
+    // 3. 校验：只保留真实存在的文档名（精确匹配），没归进去的进「未归类」
+    const known=new Set(idx.map(x=>x.name));
+    const clean={},used=new Set();
+    for(const c in tree){
+      const v=tree[c];
+      if(Array.isArray(v)){
+        const arr=v.map(normName).filter(n=>known.has(n)&&!used.has(n));
+        arr.forEach(n=>used.add(n));
+        if(arr.length)clean[c]=arr;
+      }else if(v&&typeof v==='object'){
+        const sub={};
+        for(const sc in v){
+          const src=Array.isArray(v[sc])?v[sc]:(v[sc]&&typeof v[sc]==='object'?[].concat(...Object.values(v[sc]).map(x=>Array.isArray(x)?x:[])):[]);
+          const arr=src.map(normName).filter(n=>known.has(n)&&!used.has(n));
+          arr.forEach(n=>used.add(n));
+          if(arr.length)sub[sc]=arr;
+        }
+        if(Object.keys(sub).length)clean[c]=sub;
+      }
+    }
+    const rest=idx.map(x=>x.name).filter(n=>!used.has(n));
+    if(rest.length)clean['未归类']=rest;
+    S.tree=clean;S.cats=null;
+    Object.keys(clean).forEach((c,i)=>{S.tOpen[String(i)]=true;}); // 一级类目默认展开
+    saveCfg();renderTree();updScope();
+  }catch(err){
+    alert('目录树生成失败：'+err.message);
+  }finally{b.disabled=false;b.textContent='AI 目录树';}
+}
+async function aiTreeChunk(lines,existing){
+  const body={model:CFG.model||'glm-4.6',temperature:0.2,messages:[
+    {role:'system',content:'你是知识库目录树构建助手。给你一批文档（格式「知识库名 :: 文档名」），请根据文档名体现的内容主题，设计一套两级目录树。只输出 JSON：{"类目名":{"子类名":["文档名"]}}，没有合适子类时直接 {"类目名":["文档名"]}。文档名必须原样照抄，禁止改写、增删字。类目名 2-8 个字，子类名不超过 8 个字。每个文档名只能出现一次。'+(existing&&existing.length?'已有目录类目：'+existing.join('、')+'。遇到主题相同的文档请归入已有类目，不要另建同义类目。':'')+'不要输出任何解释文字。'},
+    {role:'user',content:lines.join('\n')}
+  ]};
+  const r=await fetch(CHAT,{method:'POST',headers:{'Authorization':'Bearer '+S.key,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message||'模型调用失败');
+  let txt=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||'';
+  txt=txt.replace(/```json/g,'').replace(/```/g,'').trim();
+  const s=txt.indexOf('{'),e=txt.lastIndexOf('}');
+  if(s<0)throw new Error('模型没有返回 JSON');
+  return JSON.parse(txt.slice(s,e+1));
+}
+function clearCat(){S.tree=null;S.cats=null;S.sel='ALL';_selDocs=null;saveCfg();renderTree();updScope();}
+
+function openSet(){closeAll();$('mask').classList.add('on');$('mSet').classList.add('on');}
+
+async function clearFileCache(btn){  try{
+    if(window.caches){const c=await caches.open('kb-files-v1');const keys=await c.keys();await Promise.all(keys.map(k=>c.delete(k)));}
+    for(const k of Object.keys(_docCache))delete _docCache[k];
+    localStorage.removeItem('kb_scache');
+    btn.textContent='已清除 ✓';
+    setTimeout(()=>{btn.textContent='清文件缓存';},2000);
+  }catch(e){alert('清除失败：'+e.message);}
+}
+
+// ============ 全文弹窗：文档内搜索 ============
+let _findHits=[],_findIdx=-1;
+function _clearMarks(root){
+  root.querySelectorAll('mark.docmark').forEach(m=>{
+    const t=document.createTextNode(m.textContent);
+    m.parentNode.replaceChild(t,m);
+  });
+  root.normalize();
+}
+function _markAll(root,term){
+  _clearMarks(root);
+  const lw=term.toLowerCase();
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+  const targets=[];
+  let n;
+  while(n=walker.nextNode()){
+    if(n.parentNode.closest('mark'))continue;
+    if(n.nodeValue&&n.nodeValue.toLowerCase().includes(lw))targets.push(n);
+  }
+  for(const node of targets){
+    let txt=node.nodeValue,idx;
+    const frag=document.createDocumentFragment();
+    let pos=0;
+    const low=txt.toLowerCase();
+    while((idx=low.indexOf(lw,pos))!==-1){
+      if(idx>pos)frag.appendChild(document.createTextNode(txt.slice(pos,idx)));
+      const mk=document.createElement('mark');mk.className='docmark';
+      mk.style.cssText='background:#ffe58f;border-radius:2px';
+      mk.textContent=txt.slice(idx,idx+term.length);
+      frag.appendChild(mk);
+      pos=idx+term.length;
+    }
+    if(pos<txt.length)frag.appendChild(document.createTextNode(txt.slice(pos)));
+    node.parentNode.replaceChild(frag,node);
+  }
+}
+function docFindNext(dir){
+  const term=$('docFind').value.trim();
+  const body=$('fullBody');
+  if(!term)return;
+  if(_findHits.term!==term||!body.contains(_findHits[0])){
+    _markAll(body,term);
+    _findHits=Array.from(body.querySelectorAll('mark.docmark'));
+    _findHits.term=term;
+    _findIdx=dir>=0?-1:_findHits.length;
+  }
+  if(!_findHits.length){alert('文档里没有找到「'+term+'」');return;}
+  _findIdx=(_findIdx+dir+_findHits.length)%_findHits.length;
+  _findHits.forEach((m,i)=>m.style.background=i===_findIdx?'#ff9c6e':'#ffe58f');
+  const cur=_findHits[_findIdx];
+  cur.scrollIntoView({block:'center'});
+  $('fullTitle').textContent=$('fullTitle').textContent.replace(/ · \d+\/\d+$/,'')+' · '+(_findIdx+1)+'/'+_findHits.length;
+}
+
+// ============ 全文弹窗：AI 问答/总结（glm-4-flash 免费）============
+function _docText(){
+  const body=$('fullBody');
+  const pgs=body.querySelectorAll('.pgtxt');
+  let txt=pgs.length?Array.from(pgs).map(p=>p.textContent).join('\n'):(body.innerText||'');
+  return txt.replace(/\s+/g,' ').trim().slice(0,6000);
+}
+function _showAiBox(html){
+  const body=$('fullBody');
+  const old=body.querySelector('.ai-sum');if(old)old.remove();
+  const box=document.createElement('div');
+  box.className='ai-sum';
+  box.style.cssText='max-width:860px;margin:10px auto;padding:12px 16px;border:1px solid var(--main);border-radius:8px;background:#f6f9ff;font-size:13.5px;line-height:1.9;white-space:pre-wrap';
+  box.innerHTML='<b style="color:var(--main)">AI 回答</b>（'+(_lastAiModel||'glm-4.7-flash')+' · 免费）<a href="javascript:void(0)" style="float:right;color:var(--tx3)" onclick="this.parentNode.remove()">关闭</a>\n'+html;
+  body.insertBefore(box,body.firstChild);
+  box.scrollIntoView({block:'nearest'});
+}
+const AI_MODELS=['glm-4.7-flash','glm-4-flash-250414','glm-4-flash']; // 免费模型接力：挤不上自动换下一个
+async function _aiCall(system,user){
+  let lastErr=null;
+  for(const model of AI_MODELS){
+    try{
+      const r=await fetch(CHAT,{method:'POST',headers:{'Authorization':'Bearer '+S.key,'Content-Type':'application/json'},body:JSON.stringify({
+        model:model,temperature:0.3,thinking:{type:'disabled'},messages:[
+          {role:'system',content:system},
+          {role:'user',content:user}
+        ]})});
+      const d=await r.json();
+      if(d.error){lastErr=new Error(d.error.message||'模型调用失败');continue;}
+      const out=(d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||'';
+      if(!out){lastErr=new Error('模型返回为空');continue;}
+      _lastAiModel=model;
+      return out;
+    }catch(e){lastErr=e;}
+  }
+  throw lastErr||new Error('所有免费模型都不可用');
+}
+async function aiAsk(btn){
+  if(!S.key){alert('请先在设置里填写 API Key');return;}
+  const q=$('docAsk').value.trim();
+  if(!q){alert('先输入你想问的问题，比如「保修期多久」');return;}
+  const txt=_docText();
+  if(!txt){alert('文档没有可分析的文字内容');return;}
+  if(btn){btn.disabled=true;btn.dataset.old=btn.textContent;btn.textContent='思考中…';}
+  try{
+    const out=await _aiCall('你是文档问答助手。仅根据给定的文档内容用简体中文回答用户问题；文档里没有的信息就直说「文档中未提及」。回答简洁，可用要点列表。','【文档内容】\n'+txt+'\n\n【我的问题】'+q);
+    _showAiBox(esc(out));
+  }catch(e){
+    alert('AI 问答失败：'+e.message);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=btn.dataset.old||'AI 问答';}
+  }
+}
+function openUpload(){
+  if(!S.libs.length){alert('请先加载知识库');return;}
+  closeAll();
+  $('uKb').innerHTML=S.libs.map(k=>'<option value="'+k.id+'">'+esc(k.name)+'</option>').join('');
+  $('mask').classList.add('on');$('mUp').classList.add('on');
+}
+function closeAll(){$('mask').classList.remove('on');$('mSet').classList.remove('on');$('mUp').classList.remove('on');$('mFull').classList.remove('on');}
+
+function pickFiles(fs){
+  const imgMax=IMG_MAX_MB*1024*1024;
+  REJECTED=[];
+  for(const f of Array.from(fs)){
+    const ext=(f.name.split('.').pop()||'').toLowerCase();
+    if(IMG_EXT.includes(ext)){
+      if(f.size>imgMax){
+        REJECTED.push(f.name+'（已拦截：图片超过 '+IMG_MAX_MB+'MB 上限，实际 '+(f.size/1024/1024).toFixed(1)+'MB）');
+      }else{
+        PENDING.push(f);
+      }
+      continue;
+    }
+    if(!OK_EXT.includes(ext)){
+      REJECTED.push(f.name+'（已拦截：'+(MEDIA_EXT.includes(ext)?'视频/音频无法收入知识库':'不支持的格式')+'）');
+      continue;
+    }
+    const lim=limitFor(ext);
+    if(f.size>lim*1024*1024){
+      REJECTED.push(f.name+'（已拦截：'+ext+' 超过 '+lim+'MB 上限，实际 '+(f.size/1024/1024).toFixed(1)+'MB）');
+      continue;
+    }
+    PENDING.push(f);
+  }
+  renderFiles();
+}
+function renderFiles(){
+  let h=PENDING.map(f=>'<div>'+esc(f.name)+' · '+(f.size/1024).toFixed(0)+' KB</div>').join('');
+  h+=REJECTED.map(t=>'<div style="color:var(--err)">'+esc(t)+'</div>').join('');
+  $('uFiles').innerHTML=h;
+}
+const drop=$('drop');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');pickFiles(e.dataTransfer.files);});
+
+function plog(msg,cls){
+  const d=document.createElement('div');
+  if(cls)d.className=cls;
+  d.textContent=msg;
+  $('uLog').appendChild(d);
+  $('uLog').scrollTop=$('uLog').scrollHeight;
+}
+
+async function doUpload(){
+  const pw=prompt('请输入上传密码：');
+  if(pw===null)return;
+  if(pw!==(CFG.upload_pass||'12345678')){alert('上传密码错误');return;}
+  const kb=$('uKb').value;
+  const allUrls=$('uUrl').value.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean);
+  const urls=[],badUrls=[];
+  for(const u of allUrls){
+    const ext=(u.split('?')[0].split('#')[0].split('.').pop()||'').toLowerCase();
+    (MEDIA_EXT.includes(ext)?badUrls:urls).push(u);
+  }
+  if(!PENDING.length&&!urls.length){
+    alert(badUrls.length?'所选链接都是视频/图片等媒体文件，已拦截（它们无法收入知识库）':'请先选择文件或填写链接');
+    return;
+  }
+  const b=$('uBtn');b.disabled=true;
+  $('uLog').innerHTML='<div class="log" id="lg"></div>';
+  const lg=()=>$('lg');
+  const L=(m,c)=>{const d=document.createElement('div');if(c)d.className=c;d.textContent=m;lg().appendChild(d);lg().scrollTop=lg().scrollHeight;};
+  badUrls.forEach(u=>L('已拦截媒体链接：'+u,'wn'));
+
+  for(const f of PENDING){
+    L('上传文件：'+f.name);
+    try{
+      let upFile=f;
+      const ext=(f.name.split('.').pop()||'').toLowerCase();
+      const isImg=IMG_EXT.includes(ext);
+      if(isImg){
+        // 智谱对图片直传的处理会失败——转成 PDF 再传，图内文字可被正常 OCR 检索
+        L('  检测到图片，自动转换为 PDF…');
+        upFile=await imgToPdf(f);
+      }
+      const fd=new FormData();
+      fd.append('files',upFile,f.name.replace(/\.[^.]+$/,'')+'.pdf');
+      if(!isImg){
+        fd.append('knowledge_type',CFG.ktype);
+        fd.append('sentence_size',String(CFG.ssize||300));
+      }
+      fd.append('parse_image',isImg?'true':(CFG.pimg?'true':'false'));
+      const r=await fetch(BASE+'/document/upload_document/'+kb,{
+        method:'POST',headers:{'Authorization':'Bearer '+S.key},body:fd
+      });
+      const d=await r.json();
+      if(d.code!==200&&d.code!==0)throw new Error(d.message||('HTTP '+r.status));
+      const ok=(d.data&&d.data.successInfos)||[];
+      const bad=(d.data&&d.data.failedInfos)||[];
+      ok.forEach(o=>L('  成功：'+o.fileName,'ok'));
+      bad.forEach(o=>L('  失败：'+o.fileName+' — '+o.failReason,'er'));
+    }catch(e){L('  出错：'+e.message,'er');}
+  }
+
+  if(urls.length){
+    L('上传链接 '+urls.length+' 条');
+    try{
+      const d=await api('/document/upload_url',{method:'POST',json:1,body:JSON.stringify({
+        knowledge_id:kb,upload_detail:urls.map(u=>({url:u}))
+      })});
+      ((d.data&&d.data.successInfos)||[]).forEach(o=>L('  成功：'+o.url,'ok'));
+      ((d.data&&d.data.failedInfos)||[]).forEach(o=>L('  失败：'+o.url+' — '+o.failReason,'er'));
+    }catch(e){L('  出错：'+e.message,'er');}
+  }
+
+  L('全部提交完成。智谱正在自动切片并建立检索索引，下方实时汇报进度：','wn');
+  PENDING=[];REJECTED=[];renderFiles();$('uUrl').value='';
+  b.disabled=false;
+  setTimeout(()=>loadLibs(true),3000);
+  watchSlicing(kb);
+}
+
+// ============ 切片进度监控：上传后自动轮询文档处理状态 ============
+const STAT_TXT={0:'排队/切片中',1:'切片完成 ✓',2:'数据异常 ✗'};
+async function watchSlicing(kb){
+  const names=new Set();
+  // 先拿到刚上传的文档名单（按当前库内文档兜底+轮询期间新增的）
+  const seen={};
+  for(let round=0;round<30;round++){
+    try{
+      const r=await fetch(BASE+'/document?knowledge_id='+kb+'&page=1&size=100',{headers:{'Authorization':'Bearer '+S.key}});
+      const d=await r.json();
+      const list=(d.data&&d.data.list)||[];
+      let changed=false;
+      for(const it of list){
+        if(!seen[it.id]){seen[it.id]=true;changed=true;
+          const st=STAT_TXT[it.embedding_stat]!==undefined?STAT_TXT[it.embedding_stat]:('状态 '+it.embedding_stat);
+          L('  「'+(it.name||'未命名')+'」'+st,it.embedding_stat===1?'ok':(it.embedding_stat===2?'er':''));
+        }else if(it.embedding_stat!==1){
+          // 已见过但未完成：完成后补一条
+        }
+      }
+      if(changed&&round===0&&Object.keys(seen).length===0){
+        L('  正在读取文档列表…');
+      }
+      // 全部完成则收尾
+      const pending=list.filter(it=>it.embedding_stat!==1&&it.embedding_stat!==2).length;
+      const okN=list.filter(it=>it.embedding_stat===1).length;
+      const badN=list.filter(it=>it.embedding_stat===2).length;
+      if(pending===0){
+        if(okN)L('✓ 全部切片完成（'+okN+' 个文档可检索）','ok');
+        if(badN)L('✗ 有 '+badN+' 个文档数据异常（向量化失败），可在智谱后台查看详情','er');
+        if(okN||badN){
+          L('现在可以搜索了：命中的是切片后的内容片段，「打开原文」跳对应文档。','wn');
+          loadLibs(true);
+        }
+        return;
+      }
+      L('… '+pending+' 个文档仍在切片中');
+    }catch(e){/* 静默重试 */}
+    await new Promise(res=>setTimeout(res,10000));
+  }
+  L('监控超时（5 分钟），切片仍在后台进行，稍后可直接搜索。','wn');
+}
+
+async function testKey(){
+  if(!$('sKey').value.trim()){alert('请先填 Key');return;}
+  S.key=$('sKey').value.trim();
+  try{
+    const r=await fetch(BASE+'/knowledge?page=1&size=1',{headers:{'Authorization':'Bearer '+S.key}});
+    const d=await r.json();
+    if(d.code===200||d.code===0)alert('连接成功，共 '+(d.data&&d.data.total)+' 个知识库');
+    else alert('失败：'+(d.message||d.code));
+  }catch(e){alert('连接失败：'+e.message);}
+}
+
+function saveSet(){
+  S.key=$('sKey').value.trim();
+  saveCfg();closeAll();
+  if(S.key)loadLibs();
+}
+
+$('recall').onchange=()=>{S.recall=$('recall').value;saveCfg();updScope();};
+$('topk').onchange=()=>{S.topk=+$('topk').value;saveCfg();};
+
+loadCfg();
+$('devIdBox').textContent=DEV_ID;
+if(!$('sKey').value.trim())$('sKey').value=S.key; // 内置key，打开即用
+renderFavbar(); // 收藏快捷栏
+// 秒开：先用本地缓存渲染知识库树和上次搜索，网络回来再静默刷新
+if(S.libs&&S.libs.length){renderTree();updScope();setStatus(true,'缓存模式 · 正在同步…');}
+$('recall').value=S.recall;$('topk').value=String(S.topk);
+// 页面打开就后台预载 pdf.js / mammoth，搜索时预览零等待
+loadPdfJs().catch(()=>{});
+loadMammoth().catch(()=>{});
+(async()=>{
+  // 配置和知识库并行加载，互不等待；配置给检索默认值用，不阻塞主流程
+  pullRemote().then(()=>{S.recall=CFG.recall||S.recall;S.topk=CFG.topk||S.topk;regDevice();}).catch(()=>{});
+  if(accessDenied()){showDenied();return;}
+  if(S.key&&CFG.auto!==false)loadLibs(true);
+  else{setStatus(false,'未连接 · 请填写 API Key');openSet();}
+})();
+</script>
+<div id="frontGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99998;display:flex;align-items:center;justify-content:center">
+<div style="background:#fff;border:1px solid #e5e8ef;border-radius:12px;padding:36px 32px;width:330px;box-shadow:0 6px 24px rgba(0,0,0,.06)">
+<h2 style="font-size:18px;text-align:center;margin-bottom:4px">🔐 知识库检索台</h2>
+<p style="font-size:12px;color:#667;text-align:center;margin-bottom:20px">请输入账户密码使用</p>
+<div id="fgErr" style="color:#d33;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
+<input id="fgU" placeholder="账户" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none;box-sizing:border-box">
+<input id="fgP" type="password" placeholder="密码" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;box-sizing:border-box">
+<button onclick="fgLogin()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2f6fed;color:#fff;font-size:14px;cursor:pointer">进 入</button>
+</div></div>
+<script>
+/* 前台门禁：签发账户（需勾选本站权限）或超管可用；聚合后台登录后自动放行 */
+var FG_NEED="kb", FG_LIST=null, FG_LS="front_gate_kb";
+(function(){
+  var ok=false;
+  try{
+    ok = sessionStorage.getItem("admin_auth")==="1" || sessionStorage.getItem(FG_LS)==="1";
+  }catch(e){}
+  if(ok){ var g=document.getElementById("frontGate"); if(g) g.remove(); return; }
+  fetch("https://raw.githubusercontent.com/phgithum/admin-console/main/accounts.json?t="+Date.now())
+    .then(function(r){return r.ok?r.json():[]}).catch(function(){return[]})
+    .then(function(j){FG_LIST=j||[];});
+  document.getElementById("fgP").addEventListener("keydown",function(e){ if(e.key==="Enter") fgLogin(); });
+})();
+function fgLogin(){
+  var u=document.getElementById("fgU").value.trim(), p=document.getElementById("fgP").value;
+  function pass(){ try{sessionStorage.setItem(FG_LS,"1")}catch(e){} var g=document.getElementById("frontGate"); if(g) g.remove(); }
+  if(u==="panhao" && p==="panhao123"){ pass(); return; }
+  var hit=(FG_LIST||[]).filter(function(a){return a.u===u && a.p===p && a[FG_NEED]})[0];
+  if(hit){ pass(); return; }
+  document.getElementById("fgErr").textContent="账户或密码错误（或无本站权限）";
+}
+</script>
 </body>
 </html>
