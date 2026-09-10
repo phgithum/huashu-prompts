@@ -132,5 +132,41 @@ function delItem(key, i) {
 }
 loadAll();
 </script>
+<div id="gateOverlay" style="position:fixed;inset:0;background:#f5f7fa;z-index:99999;display:flex;align-items:center;justify-content:center">
+<div style="background:#fff;border:1px solid #e5e8ef;border-radius:12px;padding:36px 32px;width:320px;box-shadow:0 6px 24px rgba(0,0,0,.06)">
+<h2 style="font-size:18px;text-align:center;margin-bottom:4px">&#128274; 后台登录</h2>
+<p style="font-size:12px;color:#667;text-align:center;margin-bottom:20px">请输入账户密码</p>
+<div id="gateErr" style="color:#d33;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
+<input id="gateU" placeholder="账户" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none;box-sizing:border-box">
+<input id="gateP" type="password" placeholder="密码" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;box-sizing:border-box">
+<button onclick="gateLogin()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2f6fed;color:#fff;font-size:14px;cursor:pointer">登 录</button>
+</div></div>
+<script>
+/* 后台门禁：聚合后台登录后自动放行；直接访问需手动输入 */
+var GATE_USER="panhao", GATE_PASS="panhao123", GATE_KEY="admin_auth", GATE_NEED="muji", GATE_LIST=null;
+fetch("https://raw.githubusercontent.com/phgithum/admin-console/main/accounts.json?t="+Date.now()).then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(j){GATE_LIST=j||[]});
+(function(){
+  var ok=false;
+  try{ ok = sessionStorage.getItem(GATE_KEY)==="1"; }catch(e){}
+  if(ok){ var g=document.getElementById("gateOverlay"); if(g) g.remove(); return; }
+  document.getElementById("gateP").addEventListener("keydown",function(e){ if(e.key==="Enter") gateLogin(); });
+  window.addEventListener("message",function(e){
+    if(e.origin!=="https://phgithum.github.io")return;
+    var d=e.data||{};
+    if(d.gateUser===GATE_USER && d.gatePass===GATE_PASS){
+      try{sessionStorage.setItem(GATE_KEY,"1")}catch(err){}
+      var g=document.getElementById("gateOverlay"); if(g) g.remove();
+    }
+  });
+})();
+function gateLogin(){
+  var u=document.getElementById("gateU").value.trim(), p=document.getElementById("gateP").value;
+  function pass(){ try{sessionStorage.setItem(GATE_KEY,"1")}catch(e){} var g=document.getElementById("gateOverlay"); if(g) g.remove(); }
+  if(u===GATE_USER && p===GATE_PASS){ pass(); return; }
+  var hit=(GATE_LIST||[]).filter(function(a){return a.u===u && a.p===p && a[GATE_NEED]})[0];
+  if(hit){ pass(); return; }
+  document.getElementById("gateErr").textContent="账户或密码错误（或无此后台权限）";
+}
+</script>
 </body>
 </html>
