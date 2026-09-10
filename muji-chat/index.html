@@ -58,10 +58,48 @@ h2.sec { font-size: 15px; color: #7a0000; margin: 14px 0 10px; }
 #askTable td { border: 1px solid #e3ddd3; padding: 7px 10px; vertical-align: top; }
 #askTable td:first-child { width: 92px; background: #f4f2ee; color: #7a0000; font-weight: 600; white-space: nowrap; }
 #askTable a { color: #7a0000; }
+/* ============ 移动端适配 ============ */
+@media (max-width: 1000px) {
+  #grid, #imgGrid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 720px) {
+  header { padding: 11px 14px; }
+  header h1 { font-size: 14px; line-height: 1.5; }
+  .hsub { display: none; }
+  .wrap { padding: 10px; }
+  .searchbar input { font-size: 16px; padding: 11px 13px; }
+  .hint { font-size: 11.5px; }
+  #grid, #imgGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card img { height: 132px; }
+  .card .bd { padding: 7px 8px 8px; }
+  .card .t { font-size: 12.5px; }
+  .card .p { font-size: 14px; }
+  .kcard { padding: 9px 11px; }
+  #askSec { padding: 12px; }
+  #askChat { max-height: 55vh; }
+  #askChat .msg { max-width: 92%; }
+  .askbar { flex-wrap: wrap; }
+  .askbar input { font-size: 16px; flex: 1 1 100%; }
+  .askbar button { flex: 1 1 100%; padding: 11px 0; }
+  #askTable td { padding: 6px 8px; font-size: 12.5px; }
+  #askTable td:first-child { width: 74px; }
+  .hint b { display: inline; }
+}
+@media (max-width: 420px) {
+  header { padding: 10px 12px; }
+  .wrap { padding: 8px; }
+  #grid, #imgGrid { gap: 8px; }
+  .card .t { font-size: 12px; }
+  .card .s { font-size: 10.5px; }
+  .card .ops { gap: 4px; }
+  .card .ops button { font-size: 11px; min-width: 0; padding: 5px 2px; }
+  #scriptBox { padding: 11px; }
+  #scriptBox .txt { font-size: 13px; }
+}
 </style>
 </head>
 <body>
-<header><h1>MUJI 商品知识库搜索 —— 文字 / 条码 / 款号 / 图片识别</h1></header>
+<header><h1>MUJI 商品知识库搜索<span class="hsub"> —— 文字 / 条码 / 款号 / 图片识别</span></h1></header>
 <div id="pasteTip">已收到图片，识别中…</div>
 <div class="wrap">
 
@@ -110,10 +148,8 @@ const KVDB = 'https://kvdb.io/Ks73CVNzBmXEcgUhaBfkFd';
 const D = window.MUJI_DATA || {products: {}, sizes: {}};
 const byId = id => document.getElementById(id);
 window.onerror = function (msg, src, line) {
-  const bar = document.createElement('div');
-  bar.style.cssText = 'background:#b00;color:#fff;padding:6px 14px;font-size:12px';
-  bar.textContent = '页面脚本出错：' + msg;
-  document.body.insertBefore(bar, document.body.firstChild);
+  // 只写控制台，不在页面上暴露技术错误信息
+  try { console.error('[MUJI] 脚本错误:', msg, src, line); } catch (e) {}
 };
 
 /* ================== 设备授权 ================== */
@@ -153,7 +189,7 @@ function showBlock() {
 }
 
 /* ================== 工具 ================== */
-function esc(s){ return (s||'').replace(/&/g,'&lt;').replace(/</g,'&lt;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function norm(s){ return (s||'').toLowerCase().replace(/\s+/g, '').replace(/[Ａ-Ｚａ-ｚ０-９：－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); }
 function fuzzyContains(text, word, loose) {
   if (text.includes(word)) return true;
@@ -185,15 +221,54 @@ function fallbackCopy(t, done) {
   try { document.execCommand('copy'); done(); } catch (e) { alert('复制失败，请手动选择文字复制'); }
   ta.remove();
 }
+// 官网尺寸规格表（sizeSpecs 数组）转文字：按尺码分组罗列
+function specText(arr) {
+  try {
+    const by = {};
+    for (const r of arr) {
+      const k = r.sizeName || '规格';
+      (by[k] = by[k] || []).push((r.specName || '') + ' ' + (r.specValue || ''));
+    }
+    return Object.entries(by).map(([k, vs]) => k + '：' + vs.join('、')).join('；');
+  } catch (e) { return ''; }
+}
+// 尺码与颜色：直接用商品自带的 SKU 表（v），无需联网、不额外请求
 function sizeText(sku) {
-  const s = D.sizes[sku];
-  if (!s) return '';
+  const p = D.products[sku] || {};
+  const ocr = D.sizes[sku] || {};
   const parts = [];
-  if (s.r) parts.push('尺码推荐(号型映射)：' + s.r);
-  if (s.tb) parts.push('尺码对照表(cm)：' + s.tb);
-  if (s.m) parts.push('模特参考：' + s.m);
-  if (s.f) parts.push('版型：' + s.f);
-  return parts.length ? parts.join('；') : '尺码数据：详情未提供尺码表，按品类通用尺码回答并注明仅供参考。';
+  const v = Array.isArray(p.v) ? p.v : [];
+  if (v.length) {
+    const ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '均码', 'F'];
+    const colors = [...new Set(v.map(x => x[1]).filter(Boolean))];
+    const sizes = [...new Set(v.map(x => x[2]).filter(Boolean))];
+    sizes.sort((a, b) => {
+      const ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    });
+    if (sizes.length) parts.push('可选尺码：' + sizes.join(' / '));
+    if (colors.length && colors.length <= 6) {
+      parts.push('颜色（括号内为该色可选尺码）：' + colors.map(c => {
+        const cs = [...new Set(v.filter(x => x[1] === c).map(x => x[2]).filter(Boolean))];
+        return c + (colors.length > 1 && cs.length ? '（' + cs.join('、') + '）' : '');
+      }).join('；'));
+    } else if (colors.length) {
+      parts.push('可选颜色共 ' + colors.length + ' 种：' + colors.slice(0, 8).join('、') + (colors.length > 8 ? ' 等' : ''));
+    }
+    parts.push('颜色×尺码共 ' + v.length + ' 个在售条码');
+  } else {
+    const z = Array.isArray(p.z) ? p.z.filter(Boolean) : [];
+    if (z.length) parts.push('可选尺码：' + z.join(' / '));
+  }
+  const tb = ocr.tb || p.tb;
+  if (tb) {
+    const t = typeof tb === 'string' ? tb : specText(tb);
+    if (t) parts.push('官方尺寸规格：' + t);
+  }
+  if (ocr.r) parts.push('号型映射：' + ocr.r);
+  if (ocr.m) parts.push('模特参考：' + ocr.m);
+  if (ocr.f) parts.push('版型：' + ocr.f);
+  return parts.length ? parts.join('；') : '';
 }
 
 /* ================== 商品匹配 ================== */
@@ -323,7 +398,7 @@ function search() {
   const localCards = hits.slice(0, 3).map(({sku}) => {
     const st = sizeText(sku);
     if (!st) return '';
-    return `<details class="kcard"><summary><b>官方尺码与版型资料</b>｜${esc(D.products[sku].t)}</summary><div class="pre">${esc(st)}</div></details>`;
+    return `<details class="kcard"><summary><b>尺码与颜色</b>｜${esc(D.products[sku].t)}</summary><div class="pre">${esc(st)}</div></details>`;
   }).join('');
   Promise.all([retrieve(kq), retrieve(hits.length ? hits[0].p.t : query)]).then(([a, b2]) => {
     const seen = new Set();
@@ -539,6 +614,62 @@ byId('askForm').addEventListener('submit', async e => {
 });
 recordVisit();
 checkAcl().then(s => { if (s === 'blocked') showBlock(); });
+</script>
+<div id="frontGate" style="position:fixed;inset:0;background:#f5f7fa;z-index:99998;display:flex;align-items:center;justify-content:center">
+<div style="background:#fff;border:1px solid #e5e8ef;border-radius:12px;padding:36px 32px;width:330px;box-shadow:0 6px 24px rgba(0,0,0,.06)">
+<h2 style="font-size:18px;text-align:center;margin-bottom:4px">🔐 MUJI 知识库</h2>
+<p style="font-size:12px;color:#667;text-align:center;margin-bottom:20px">请输入账户密码使用</p>
+<div id="fgErr" style="color:#d33;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
+<input id="fgU" placeholder="账户" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none;box-sizing:border-box">
+<input id="fgP" type="password" placeholder="密码" style="width:100%;padding:10px 12px;border:1px solid #e5e8ef;border-radius:8px;font-size:14px;margin-bottom:14px;outline:none;box-sizing:border-box">
+<button onclick="fgLogin()" style="width:100%;padding:10px;border:none;border-radius:8px;background:#2f6fed;color:#fff;font-size:14px;cursor:pointer">进 入</button>
+</div></div>
+<script>
+/* 前台门禁：密码一律以 SHA-256 哈希参与比对，页面源码里不含任何明文密码 */
+var FG_NEED="muji", FG_LIST=null, FG_LS="front_gate_muji";
+var FG_ADMIN="panhao";
+var FG_ADMIN_H="9363af785c5ecaa8151869e729bc470fffd16274b3ad82b02f5eb050817a9957";
+function fgSha(str){
+  try{
+    if(!(window.crypto&&crypto.subtle&&crypto.subtle.digest)) return Promise.resolve(null);
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(h){
+      return Array.prototype.map.call(new Uint8Array(h),function(b){ return ("0"+b.toString(16)).slice(-2); }).join("");
+    }).catch(function(){ return null; });
+  }catch(e){ return Promise.resolve(null); }
+}
+(function(){
+  var ok=false;
+  try{
+    ok = sessionStorage.getItem("admin_auth")==="1" || sessionStorage.getItem(FG_LS)==="1";
+  }catch(e){}
+  if(ok){ var g=document.getElementById("frontGate"); if(g) g.remove(); return; }
+  fetch("https://raw.githubusercontent.com/phgithum/admin-console/main/accounts.json?t="+Date.now())
+    .then(function(r){return r.ok?r.json():[]}).catch(function(){return[]})
+    .then(function(j){FG_LIST=j||[];});
+  document.getElementById("fgP").addEventListener("keydown",function(e){ if(e.key==="Enter") fgLogin(); });
+})();
+function fgPass(){
+  try{sessionStorage.setItem(FG_LS,"1")}catch(e){}
+  var g=document.getElementById("frontGate"); if(g) g.remove();
+}
+function fgLogin(){
+  var err=document.getElementById("fgErr");
+  var u=(document.getElementById("fgU").value||"").trim();
+  var p=document.getElementById("fgP").value||"";
+  err.textContent="";
+  if(!u||!p){ err.textContent="请输入账户和密码"; return; }
+  fgSha(p).then(function(h){
+    if(!h){ err.textContent="当前环境不支持加密校验，请用 https 打开本页"; return; }
+    if(u===FG_ADMIN && h===FG_ADMIN_H){ fgPass(); return; }
+    var hit=(FG_LIST||[]).filter(function(a){
+      if(a.u!==u || !a[FG_NEED]) return false;
+      if(a.h) return a.h===h;   /* 新格式：账户文件里只存哈希 */
+      return a.p===p;           /* 兼容旧格式：仍是明文，建议在后台重新签发 */
+    })[0];
+    if(hit){ fgPass(); return; }
+    err.textContent="账户或密码错误（或无本站权限）";
+  });
+}
 </script>
 </body>
 </html>
