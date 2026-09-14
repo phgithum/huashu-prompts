@@ -1261,22 +1261,6 @@ var FG_ADMIN="panhao";
 var FG_ADMIN_H="9363af785c5ecaa8151869e729bc470fffd16274b3ad82b02f5eb050817a9957";
 
 function fgSha(str){
-
-  try{
-
-    if(!(window.crypto&&crypto.subtle&&crypto.subtle.digest)) return Promise.resolve(null);
-
-    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(h){
-
-      return Array.prototype.map.call(new Uint8Array(h),function(b){ return ("0"+b.toString(16)).slice(-2); }).join("");
-
-    }).catch(function(){ return null; });
-
-  }catch(e){ return Promise.resolve(null); }
-
-}
-
-function fgSha(str){
   try{
     if(!(window.crypto&&crypto.subtle&&crypto.subtle.digest)) return Promise.resolve(null);
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(h){
