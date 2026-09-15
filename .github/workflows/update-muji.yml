@@ -67,7 +67,7 @@ jobs:
         run: |
           git config user.name "muji-bot"
           git config user.email "actions@users.noreply.github.com"
-          for f in muji_products.json muji_products.csv muji-chat/data.js kb_docs data/failed_urls.txt progress.json; do
+          for f in muji_products.json muji_products.csv muji-chat/data.js; do
             if [ -e "$f" ]; then git add "$f"; fi
           done
           git diff --cached --quiet || (git commit -m "auto: weekly data update" && git pull --rebase --autostash && git push)
