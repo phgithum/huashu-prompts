@@ -2,7 +2,7 @@ name: update-muji-data
 
 on:
   schedule:
-    - cron: '23 2 * * 1'  # 每周一 02:23 UTC（北京 10:23）：错峰避开 GitHub 整点排队
+    - cron: '37 18 * * 0'  # 周日 18:37 UTC = 北京周一 02:37：避开周一全球高峰与整点拥挤，周一早上数据就绪
   workflow_dispatch:
     inputs:
       skip_scrape:
@@ -67,5 +67,7 @@ jobs:
         run: |
           git config user.name "muji-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add muji_products.json muji_products.csv muji-chat/data.js kb_docs failed_urls.txt progress.json || true
+          for f in muji_products.json muji_products.csv muji-chat/data.js kb_docs data/failed_urls.txt progress.json; do
+            if [ -e "$f" ]; then git add "$f"; fi
+          done
           git diff --cached --quiet || (git commit -m "auto: weekly data update" && git pull --rebase --autostash && git push)
