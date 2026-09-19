@@ -9,6 +9,26 @@ os.makedirs(OUT, exist_ok=True)
 
 products = json.load(open(os.path.join(HERE, 'muji_products.json'), encoding='utf-8'))
 
+# ---------- 0. 清洗抓取残片 ----------
+# 抓取在部分页面上会留下「无标题 / 无 SKU / 价格是字符串」的残片记录，
+# 它们既污染文档，又会让下面的价格排序抛 TypeError 把整条链路打死（2026-09-15 事故根因）。
+def _num(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return 0.0
+
+_clean, _skip = [], 0
+for _p in products:
+    if not isinstance(_p, dict) or not (_p.get('title') or '').strip() or not _p.get('sku'):
+        _skip += 1
+        continue
+    _p['price'] = _num(_p.get('price'))
+    _clean.append(_p)
+if _skip:
+    print(f'跳过抓取残片 {_skip} 条（无标题/无 SKU），有效商品 {len(_clean)} 条')
+products = _clean
+
 # ---------- 1. 按分类（前两级）切分 ----------
 def cat_key(cat):
     parts = (cat or '未分类').split('/')
@@ -38,7 +58,7 @@ for cat, items in sorted(groups.items()):
     safe = re.sub(r'[\\/:*?"<>|]', '_', cat)
     lines = [f'# MUJI 无印良品商品知识 —— {cat}', '',
              f'共 {len(items)} 个商品。字段：价格为人民币元，SKU 为 13 位商品条码，材质说明来自官网。', '']
-    for p in sorted(items, key=lambda x: x.get('price') or 0):
+    for p in sorted(items, key=lambda x: _num(x.get('price'))):
         lines.append(f"## {p.get('title','（无标题）')}")
         lines.append(f"- 价格：¥{p.get('price','')}")
         lines.append(f"- SKU/条码：{p.get('sku','')}")

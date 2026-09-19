@@ -286,6 +286,10 @@ const CFG = {
 
   ark: 'ark-c38a6bd9' + '-3e93-4367-9e5a-a64edcd09058-eb0f0',
 
+  glm: 'glm-4-flash',
+
+  llmFirst: true,
+
   visionModel: 'doubao-seed-character-260628'
 
 };
@@ -860,13 +864,13 @@ async function genScript(sku) {
 
   byId('scriptBox').scrollIntoView({behavior: 'smooth', block: 'nearest'});
 
-  const sys = '你是无印良品的资深导购。请根据商品信息生成一段发给顾客的销售话术：1)开头一句抓住需求的推荐语；2)2-3个卖点（材质/工艺/功能，来自商品信息，不编造数字）；3)一句使用/搭配建议；4)结尾轻推下单。语气亲切不油腻，总共不超过150字，直接输出话术本身。'
+  const sys = '你是无印良品的资深导购。请根据商品信息生成一段发给顾客的销售话术：1)开头一句抓住需求的推荐语；2)2-3个卖点（材质/工艺/功能，来自商品信息，不编造数字）；3)一句使用/搭配建议；4)结尾轻推下单。语气亲切不油腻、克制不叫卖，总共不超过150字，直接输出话术本身。不要使用任何 emoji 或表情符号，不要用引号把整段包起来，不要加称呼前缀。'
 
     + '\n\n商品信息：\n标题：' + p.t + '\n价格：¥' + p.p + '\nSKU：' + sku + '\n分类：' + p.c + '\n材质说明：' + p.d + '\n' + sizeText(sku);
 
   try {
 
-    const out = await visionCall([{type: 'text', 'text': '请为这个商品生成话术'}], sys, false);
+    const out = await textCall([{type: 'text', 'text': '请为这个商品生成话术'}], sys);
 
     if (!out) byId('scriptTxt').textContent = '生成失败，请重试';
 
@@ -897,6 +901,63 @@ async function visionCall(contentParts, sysPrompt) {
   const j = await r.json();
 
   return (((j.choices || [{}])[0].message || {}).content || '').trim();
+
+}
+
+
+/* ================== 通用文本调用：智谱 GLM 优先（免费档），失败/超时回落豆包 ================== */
+
+async function glmCall(contentParts, sysPrompt) {
+
+  const text = (contentParts || []).map(c => (c && c.text) || '').join('\n').trim();
+
+  const ac = new AbortController();
+
+  const timer = setTimeout(() => ac.abort(), 20000);
+
+  try {
+
+    const r = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+
+      method: 'POST',
+
+      signal: ac.signal,
+
+      headers: {'Authorization': 'Bearer ' + CFG.zhipu, 'Content-Type': 'application/json'},
+
+      body: JSON.stringify({model: CFG.glm, max_tokens: 900, temperature: 0.1,
+
+        messages: [{'role': 'system', 'content': sysPrompt}, {'role': 'user', 'content': text}]})
+
+    });
+
+    if (!r.ok) throw new Error('GLM ' + r.status + ' ' + (await r.text()).slice(0, 160));
+
+    const j = await r.json();
+
+    const out = (((j.choices || [{}])[0].message || {}).content || '').trim();
+
+    if (!out) throw new Error('GLM 空回复');
+
+    return out;
+
+  } finally { clearTimeout(timer); }
+
+}
+
+async function textCall(contentParts, sysPrompt) {
+
+  if (!CFG.llmFirst) return await visionCall(contentParts, sysPrompt);
+
+  try { return await glmCall(contentParts, sysPrompt); }
+
+  catch (e) {
+
+    try { console.warn('[MUJI] GLM 未成功，回落豆包：', e.message); } catch (_) {}
+
+    return await visionCall(contentParts, sysPrompt);
+
+  }
 
 }
 
